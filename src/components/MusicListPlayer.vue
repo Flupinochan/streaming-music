@@ -11,11 +11,33 @@
       :value="music.s3Path"
       @click="handleSelectMusic(music)"
     >
-      <v-list-item-title>{{ music.s3Path }}</v-list-item-title>
+      <v-list-item-title>{{
+        music.title +
+        " - " +
+        Math.floor(music.durationSeconds / 60) +
+        "分 " +
+        (music.fileSize / 1024 / 1024).toFixed(1) +
+        "MB"
+      }}</v-list-item-title>
     </v-list-item>
   </v-list>
 
   <div v-if="musicPlayerStore.musicUrl">
+    <div class="mb-2">
+      <v-slider
+        v-model="sliderSeconds"
+        :min="0"
+        :max="Math.max(0, musicPlayerStore.durationSeconds)"
+        :step="1"
+        hide-details
+        @start="musicPlayerStore.isSeeking = true"
+        @end="musicPlayerStore.isSeeking = false"
+      />
+      <div class="text-caption">
+        {{ musicPlayerStore.timeLabel }}
+      </div>
+    </div>
+
     <v-btn
       :disabled="musicPlayerStore.isPlaying"
       @click="musicPlayerStore.play"
@@ -51,21 +73,28 @@
 <script setup lang="ts">
 import { useMusicPlayerStore } from "@/stores/useMusicPlayerStore";
 import { useMusicStore, type MusicItem } from "@/stores/useMusicStore";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 
 const selectedMusicName = computed<string[]>({
   get: () =>
-    musicPlayerStore.currentS3Path ? [musicPlayerStore.currentS3Path] : [],
+    musicPlayerStore.activeS3Path ? [musicPlayerStore.activeS3Path] : [],
   set: (v) => {
-    musicPlayerStore.currentS3Path = v[0] ?? null;
+    musicPlayerStore.activeS3Path = v[0] ?? null;
+  },
+});
+
+const sliderSeconds = computed<number>({
+  get: () => musicPlayerStore.positionSeconds,
+  set: (v) => {
+    musicPlayerStore.seekTo(v);
   },
 });
 
 const handleSelectMusic = async (music: MusicItem): Promise<void> => {
-  musicPlayerStore.currentS3Path = music.s3Path;
+  musicPlayerStore.setNowPlaying(music);
   try {
     await musicStore.fetchMusic(music);
     if (musicStore.selectedMusicUrl) {
@@ -77,11 +106,22 @@ const handleSelectMusic = async (music: MusicItem): Promise<void> => {
 };
 
 onMounted(async () => {
-  await musicStore.fetchMusicList();
-  if (!musicPlayerStore.currentS3Path && musicStore.musicList.length > 0) {
-    await handleSelectMusic(musicStore.musicList[0]);
-  }
+  musicStore.startMusicListSubscription();
 });
+
+onUnmounted(() => {
+  musicStore.stopMusicListSubscription();
+});
+
+watch(
+  () => [musicPlayerStore.activeS3Path, musicStore.musicList] as const,
+  async ([currentS3Path, list]) => {
+    if (currentS3Path) return;
+    if (list.length === 0) return;
+    await handleSelectMusic(list[0]);
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped></style>

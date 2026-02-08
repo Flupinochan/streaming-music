@@ -1,6 +1,6 @@
 import { Howl } from "howler";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useMusicStore, type MusicItem } from "./useMusicStore";
 
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
@@ -9,46 +9,116 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   const sound = ref<Howl | null>(null);
   const musicUrl = ref<string | null>(null);
   const isPlaying = ref(false);
-  const currentS3Path = ref<string | null>(null);
+  const activeS3Path = ref<string | null>(null);
+  const activeMusicTitle = ref<string | null>(null);
+
+  const positionSeconds = ref(0);
+  const durationSeconds = ref(0);
+  const isSeeking = ref(false);
+
+  let positionTimer: number | null = null;
+
+  const startPositionTimer = (): void => {
+    if (positionTimer != null) return;
+    positionTimer = window.setInterval(() => {
+      if (!sound.value) return;
+      if (isSeeking.value) return;
+      const pos = sound.value.seek();
+      if (typeof pos === "number") positionSeconds.value = pos;
+      durationSeconds.value = sound.value.duration() || durationSeconds.value;
+    }, 250);
+  };
+
+  const stopPositionTimer = (): void => {
+    if (positionTimer == null) return;
+    window.clearInterval(positionTimer);
+    positionTimer = null;
+  };
 
   // Repeat one track
   const repeatOne = ref(false);
 
   // Shuffle all tracks
   const shuffleAll = ref(false);
-  const shufflePool = ref<string[]>([]);
+  const shufflePool = ref<MusicItem[]>([]);
 
   const resetSound = (): void => {
+    stopPositionTimer();
     sound.value?.unload();
     sound.value = null;
     if (musicUrl.value?.startsWith("blob:")) {
       URL.revokeObjectURL(musicUrl.value);
     }
     musicUrl.value = null;
+
+    positionSeconds.value = 0;
+    durationSeconds.value = 0;
+    isSeeking.value = false;
   };
+
+  const setNowPlaying = (music: Pick<MusicItem, "s3Path" | "title">): void => {
+    activeS3Path.value = music.s3Path;
+    activeMusicTitle.value = music.title;
+  };
+
+  const seekTo = (seconds: number): void => {
+    if (!sound.value) return;
+    const clamped = Math.max(
+      0,
+      Math.min(seconds, durationSeconds.value || seconds),
+    );
+    sound.value.seek(clamped);
+    positionSeconds.value = clamped;
+  };
+
+  const timeLabel = computed((): string => {
+    const format = (s: number): string => {
+      if (!Number.isFinite(s) || s < 0) return "0:00";
+      const whole = Math.floor(s);
+      const m = Math.floor(whole / 60);
+      const sec = whole % 60;
+      return `${m}:${sec.toString().padStart(2, "0")}`;
+    };
+    return `${format(positionSeconds.value)} / ${format(durationSeconds.value)}`;
+  });
 
   const createHowlInstance = (url: string): Howl =>
     new Howl({
       src: [url],
       html5: true,
       loop: repeatOne.value,
+      onload: (): void => {
+        durationSeconds.value =
+          sound.value?.duration() || durationSeconds.value;
+      },
       onplay: (): void => {
         isPlaying.value = true;
+        startPositionTimer();
 
         if (!("mediaSession" in navigator)) return;
-        if (!currentS3Path.value) return;
+        const title = activeMusicTitle.value ?? activeS3Path.value;
+        if (!title) return;
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: currentS3Path.value,
+          title,
         });
       },
-      onpause: () => (isPlaying.value = false),
-      onstop: () => (isPlaying.value = false),
+      onpause: (): void => {
+        isPlaying.value = false;
+        stopPositionTimer();
+      },
+      onstop: (): void => {
+        isPlaying.value = false;
+        stopPositionTimer();
+        positionSeconds.value = 0;
+      },
       onend: (): void => {
         if (!repeatOne.value && shuffleAll.value) {
           void playNextShuffle();
           return;
         }
         isPlaying.value = false;
+        stopPositionTimer();
+        positionSeconds.value = 0;
       },
     });
 
@@ -73,16 +143,14 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     }
 
     const i = Math.floor(Math.random() * shufflePool.value.length);
-    const [nextKey] = shufflePool.value.splice(i, 1);
-    if (!nextKey) {
+    const [nextItem] = shufflePool.value.splice(i, 1);
+    if (!nextItem) {
       isPlaying.value = false;
       return;
     }
 
-    currentS3Path.value = nextKey;
-    const item: MusicItem = { s3Path: nextKey };
-
-    await musicStore.fetchMusic(item);
+    setNowPlaying(nextItem);
+    await musicStore.fetchMusic(nextItem);
     const url = musicStore.selectedMusicUrl?.toString();
     if (!url) return;
 
@@ -101,7 +169,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     shuffleAll.value = !shuffleAll.value;
 
     if (shuffleAll.value) {
-      shufflePool.value = musicStore.musicList.map((m) => m.s3Path);
+      shufflePool.value = [...musicStore.musicList];
     } else {
       shufflePool.value = [];
     }
@@ -117,9 +185,16 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     musicUrl,
     repeatOne,
     shuffleAll,
-    currentS3Path,
+    activeS3Path,
+    activeMusicTitle,
+    positionSeconds,
+    durationSeconds,
+    isSeeking,
+    timeLabel,
     loadFromFile,
     loadFromUrl,
+    setNowPlaying,
+    seekTo,
     toggleRepeatOne,
     toggleShuffleAll,
     play,

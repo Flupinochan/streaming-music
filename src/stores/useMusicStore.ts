@@ -1,40 +1,70 @@
-import { getUrl, list, remove, uploadData } from "aws-amplify/storage";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export interface MusicItem {
-  s3Path: string;
-}
+import type {
+  MusicRepository,
+  MusicItem as RepositoryMusicItem,
+  UploadMusicRequest as RepositoryUploadMusicRequest,
+  SubscriptionLike,
+} from "@/repository/musicRepository";
 
-export interface UploadMusicRequest {
-  s3Path: string;
-  musicData: Blob;
-}
+export type MusicItem = RepositoryMusicItem;
+export type UploadMusicRequest = RepositoryUploadMusicRequest;
 
 export const useMusicStore = defineStore("music", () => {
-  const baseMusicPath = "music";
+  let repository: MusicRepository | null = null;
+  let musicListSubscription: SubscriptionLike | null = null;
 
+  // DynamoDBのMetadata
   const musicList = ref<MusicItem[]>([]);
-  const selectedMusicS3Path = ref<string | null>(null);
+  const selectedMusic = ref<MusicItem | null>(null);
+  // S3のMusic本体
   const selectedMusicUrl = ref<URL | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  const requireRepository = (): MusicRepository => {
+    if (!repository) {
+      throw new Error(
+        "MusicRepository is not set. Call useMusicStore(pinia).setRepository() in main.ts.",
+      );
+    }
+    return repository;
+  };
+
+  const setRepository = (next: MusicRepository): void => {
+    repository = next;
+  };
+
+  const startMusicListSubscription = (): void => {
+    if (musicListSubscription) return;
+
+    loading.value = true;
+    error.value = null;
+
+    musicListSubscription = requireRepository().observeMusicList(
+      (items) => {
+        musicList.value = items;
+        loading.value = false;
+      },
+      (e) => {
+        error.value =
+          e instanceof Error ? e.message : "音楽一覧の取得に失敗しました";
+        loading.value = false;
+      },
+    );
+  };
+
+  const stopMusicListSubscription = (): void => {
+    musicListSubscription?.unsubscribe();
+    musicListSubscription = null;
+  };
 
   async function fetchMusicList(): Promise<void> {
     loading.value = true;
     error.value = null;
     try {
-      const result = await list({
-        path: `${baseMusicPath}/`,
-        options: { listAll: true },
-      });
-
-      musicList.value = result.items
-        .map((item) => item.path)
-        .filter((p): p is string => typeof p === "string" && p.length > 0)
-        .map((path) => ({
-          s3Path: path.replace(`${baseMusicPath}/`, ""),
-        }));
+      musicList.value = await requireRepository().listMusic();
     } catch (e) {
       error.value =
         e instanceof Error ? e.message : "音楽一覧の取得に失敗しました";
@@ -47,13 +77,13 @@ export const useMusicStore = defineStore("music", () => {
     loading.value = true;
     error.value = null;
     try {
-      const linkToStorageFile = await getUrl({
-        path: `${baseMusicPath}/${music.s3Path}`,
-      });
-      selectedMusicS3Path.value = music.s3Path;
-      selectedMusicUrl.value = linkToStorageFile.url;
+      const url = await requireRepository().getMusicUrl(music.s3Path);
+      selectedMusic.value = music;
+      selectedMusicUrl.value = url;
     } catch (e) {
       error.value = e instanceof Error ? e.message : "音楽の取得に失敗しました";
+      selectedMusic.value = null;
+      selectedMusicUrl.value = null;
       throw e;
     } finally {
       loading.value = false;
@@ -64,12 +94,7 @@ export const useMusicStore = defineStore("music", () => {
     loading.value = true;
     error.value = null;
     try {
-      await uploadData({
-        data: music.musicData,
-        path: `${baseMusicPath}/${music.s3Path}`,
-      }).result;
-
-      await fetchMusicList();
+      await requireRepository().uploadMusic(music);
     } catch (e) {
       error.value =
         e instanceof Error ? e.message : "音楽のアップロードに失敗しました";
@@ -80,16 +105,15 @@ export const useMusicStore = defineStore("music", () => {
   }
 
   async function removeMusic(): Promise<void> {
+    if (!selectedMusic.value) return;
+
     loading.value = true;
     error.value = null;
 
-    if (!selectedMusicS3Path.value) return;
-
     try {
-      await remove({
-        path: `${baseMusicPath}/${selectedMusicS3Path.value}`,
-      }).result;
-      selectedMusicS3Path.value = null;
+      await requireRepository().removeMusic(selectedMusic.value);
+      selectedMusic.value = null;
+      selectedMusicUrl.value = null;
       await fetchMusicList();
     } catch (e) {
       error.value = e instanceof Error ? e.message : "音楽の削除に失敗しました";
@@ -100,11 +124,14 @@ export const useMusicStore = defineStore("music", () => {
   }
 
   return {
+    setRepository,
     musicList,
-    selectedMusicS3Path,
+    selectedMusic,
     selectedMusicUrl,
     loading,
     error,
+    startMusicListSubscription,
+    stopMusicListSubscription,
     fetchMusicList,
     fetchMusic,
     uploadMusic,

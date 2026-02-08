@@ -10,7 +10,9 @@ import "vuetify/styles";
 import colors from "vuetify/util/colors";
 import outputs from "../amplify_outputs.json";
 import App from "./App.vue";
+import { AmplifyMusicRepository } from "./repository/amplifyMusicRepository";
 import { router } from "./router";
+import { useMusicStore } from "./stores/useMusicStore";
 
 Amplify.configure(outputs);
 
@@ -44,4 +46,9 @@ const vuetify = createVuetify({
   },
 });
 
-createApp(App).use(pinia).use(vuetify).use(router).mount("#app");
+const app = createApp(App).use(pinia).use(vuetify).use(router);
+
+// DI
+useMusicStore(pinia).setRepository(new AmplifyMusicRepository());
+
+app.mount("#app");
