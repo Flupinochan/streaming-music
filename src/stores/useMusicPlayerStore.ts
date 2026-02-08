@@ -44,6 +44,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
 
   const resetSound = (): void => {
     stopPositionTimer();
+    isPlaying.value = false;
+    sound.value?.stop();
     sound.value?.unload();
     sound.value = null;
     if (musicUrl.value?.startsWith("blob:")) {
@@ -87,6 +89,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
       src: [url],
       html5: true,
       loop: repeatOne.value,
+      pool: 1,
       onload: (): void => {
         durationSeconds.value =
           sound.value?.duration() || durationSeconds.value;

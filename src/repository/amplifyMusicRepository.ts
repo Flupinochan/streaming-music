@@ -8,10 +8,9 @@ import type {
   UploadMusicRequest,
 } from "./musicRepository";
 
-const client = generateClient<MusicSchema>();
-
 export class AmplifyMusicRepository implements MusicRepository {
   private readonly baseMusicPath = "music";
+  private readonly client = generateClient<MusicSchema>();
 
   private sanitizeFolderName = (name: string): string =>
     name
@@ -43,7 +42,9 @@ export class AmplifyMusicRepository implements MusicRepository {
   };
 
   async listMusic(): Promise<MusicItem[]> {
-    const result = await client.models.Music.list();
+    const result = await this.client.models.Music.list({
+      authMode: "iam",
+    });
     if (result.errors?.length) {
       throw new Error(result.errors.map((e) => e.message).join("\n"));
     }
@@ -55,7 +56,9 @@ export class AmplifyMusicRepository implements MusicRepository {
     next: (items: MusicItem[]) => void,
     error?: (error: unknown) => void,
   ): SubscriptionLike {
-    const subscription = client.models.Music.observeQuery().subscribe({
+    const subscription = this.client.models.Music.observeQuery({
+      authMode: "iam",
+    }).subscribe({
       next: ({ items }) => {
         next((items ?? []).map(this.toMusicItem));
       },
@@ -106,7 +109,7 @@ export class AmplifyMusicRepository implements MusicRepository {
     }).result;
 
     // create a music metadata to DynamoDB
-    const createResult = await client.models.Music.create({
+    const createResult = await this.client.models.Music.create({
       title,
       duration: durationSeconds,
       fileSize: request.musicFile.size,
@@ -121,7 +124,9 @@ export class AmplifyMusicRepository implements MusicRepository {
   }
 
   async removeMusic(music: MusicItem): Promise<void> {
-    const deleteResult = await client.models.Music.delete({ id: music.id });
+    const deleteResult = await this.client.models.Music.delete({
+      id: music.id,
+    });
     if (deleteResult.errors?.length) {
       throw new Error(deleteResult.errors.map((e) => e.message).join("\n"));
     }

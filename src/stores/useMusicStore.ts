@@ -20,6 +20,7 @@ export const useMusicStore = defineStore("music", () => {
   const selectedMusic = ref<MusicItem | null>(null);
   // S3のMusic本体
   const selectedMusicUrl = ref<URL | null>(null);
+  // UI State
   const loading = ref(false);
   const error = ref<string | null>(null);
 
