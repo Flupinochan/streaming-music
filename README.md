@@ -1,26 +1,46 @@
-## AWS Amplify Vue.js Starter Template
+## アーキテクチャ
 
-This repository provides a starter template for creating applications using Vue.js and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
+基本的なアーキテクチャは [PopCal](https://flupinochan.github.io/popcal-document/docs/architecture/core/overview) Flutterアプリと同様な構成
 
-## Overview
+## フォルダ構成
 
-This template equips you with a foundational Vue application integrated with AWS Amplify, streamlined for scalability and performance. It is ideal for developers looking to jumpstart their project with pre-configured AWS services like Cognito, AppSync, and DynamoDB.
+```yaml
+src/
+├── domain/
+│   ├── entities/       # ロジック
+│   ├── gateways/       # DB等以外の外部API呼び出し (Interface)
+│   ├── repositories/   # entityをDB等に保存し永続化 (Interface)
+│   ├── services/       # 複数のentityにまたがるロジック
+│   ├── value_objects/  # primitive型の代わり
+├── infrastructure/
+│   ├── dto/            # infrastructure側で利用するデータ型
+│   ├── mappers/        # dto, entityの変換処理
+│   ├── repositories/   # 実装
+│   └── gateways/       # 実装
+├── presentation/
+│   ├── dto/            # UI側で利用するデータ型
+│   ├── mappers/        # dto, entityの変換処理
+│   ├── stores/         # 状態管理
+│   └── view/           # UI
+└── use_cases/          # repository、gateway、serviceを利用したdomain層の複合処理、UIからのdto requestをmapperでentityに変換しつつ各domain処理を呼び出す。responseもmapperでentityからdtoに変換して返却
+```
 
-## Features
+## ドメイン層で利用してよい型
 
-- **Authentication**: Setup with Amazon Cognito for secure user authentication.
-- **API**: Ready-to-use GraphQL endpoint with AWS AppSync.
-- **Database**: Real-time database powered by Amazon DynamoDB.
+- [プリミティブ型](https://typescriptbook.jp/reference/values-types-variables/primitive-types)
+  - boolean
+  - number
+  - bigint
+  - string
+  - symbol
+- [標準の組み込みオブジェクト](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects)
+  - Array
+  - ArrayBuffer
+  - Date
+- [WHATWG (URL)](https://ef-carbon.github.io/url/globals.html)
+  - 組み込みオブジェクトではないが、browserおよびNode.jsどちらでも利用可能なためOK
 
-## Deploying to AWS
+## ドメイン層で利用してはいけないbrowser or Node.js依存の型
 
-For detailed instructions on deploying your application, refer to the [deployment section](https://docs.amplify.aws/vue/start/quickstart/#deploy-a-fullstack-app-to-aws) of our documentation.
-
-
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-
-This library is licensed under the MIT-0 License. See the LICENSE file.
+- File (Blob)、HTMLElement、fetch: browser依存のためNG
+- fs、path: Node.js依存のためNG

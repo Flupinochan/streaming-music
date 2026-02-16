@@ -1,7 +1,7 @@
 import { getCurrentUser } from "aws-amplify/auth";
 import type { Component } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
-import GuestPage from "../view/GuestPage.vue";
+import GuestPage from "../presentation/view/GuestPage.vue";
 
 const routes = [
   {
@@ -18,14 +18,14 @@ const routes = [
     name: "auth",
     path: "/auth",
     component: (): Promise<{ default: Component }> =>
-      import("@/view/AuthPage.vue"),
+      import("@/presentation/view/AuthPage.vue"),
   },
   {
     name: "admin",
     meta: { requiresAuth: true },
     path: "/admin",
     component: (): Promise<{ default: Component }> =>
-      import("@/view/AdminPage.vue"),
+      import("@/presentation/view/AdminPage.vue"),
   },
 ];
 

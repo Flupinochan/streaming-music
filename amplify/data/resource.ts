@@ -1,14 +1,13 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-const musicSchema = a.schema({
-  Music: a
+const musicMetadataSchema = a.schema({
+  MusicMetadata: a
     .model({
       title: a.string().required(),
-      duration: a.integer().required(),
-      fileSize: a.integer().required(),
-      s3MusicKey: a.string().required(),
-      s3ArtworkKey: a.string(),
-      playCount: a.integer().default(0),
+      musicDurationSeconds: a.integer().required(),
+      musicDataBytes: a.integer().required(),
+      musicDataPath: a.string().required(),
+      artworkImagePath: a.string().required(),
     })
     .authorization((allow) => [
       allow.guest().to(["read"]),
@@ -16,10 +15,10 @@ const musicSchema = a.schema({
     ]),
 });
 
-export type MusicSchema = ClientSchema<typeof musicSchema>;
+export type MusicMetadataSchema = ClientSchema<typeof musicMetadataSchema>;
 
 export const data = defineData({
-  schema: musicSchema,
+  schema: musicMetadataSchema,
   authorizationModes: {
     defaultAuthorizationMode: "userPool",
   },

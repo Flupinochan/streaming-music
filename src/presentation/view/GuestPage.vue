@@ -9,8 +9,8 @@
 </template>
 
 <script setup lang="ts">
-import MusicListPlayer from "@/components/MusicListPlayer.vue";
-import PageShell from "@/components/PageShell.vue";
+import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
+import PageShell from "@/presentation/view/components/PageShell.vue";
 </script>
 
 <style scoped></style>

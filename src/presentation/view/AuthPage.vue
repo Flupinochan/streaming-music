@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import PageShell from "@/components/PageShell.vue";
+import PageShell from "@/presentation/view/components/PageShell.vue";
 import { confirmSignIn, getCurrentUser, signIn } from "aws-amplify/auth";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";

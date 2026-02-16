@@ -71,8 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import { useMusicPlayerStore } from "@/stores/useMusicPlayerStore";
-import { useMusicStore, type MusicItem } from "@/stores/useMusicStore";
+import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
+import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
+import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import { computed, onMounted, onUnmounted, watch } from "vue";
 
 const musicStore = useMusicStore();
@@ -93,7 +94,7 @@ const sliderSeconds = computed<number>({
   },
 });
 
-const handleSelectMusic = async (music: MusicItem): Promise<void> => {
+const handleSelectMusic = async (music: MusicMetadataDto): Promise<void> => {
   musicPlayerStore.setNowPlaying(music);
   try {
     await musicStore.fetchMusic(music);

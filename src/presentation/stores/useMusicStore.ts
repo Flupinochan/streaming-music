@@ -1,23 +1,29 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
+import type { MusicUploadDto } from "@/presentation/dto/musicUploadDto";
+import type { UploadMusicRequest } from "@/presentation/dto/uploadMusicRequest";
+import { fileToBinaryObjectDto } from "@/presentation/mappers/fileMapper";
+import {
+  toMusicMetadataDto,
+  toMusicMetadataEntityLike,
+} from "@/presentation/mappers/musicMetadataMapper";
+import type { MusicUsecase } from "@/use_cases/music/musicUsecase";
+
 import type {
   MusicRepository,
-  MusicItem as RepositoryMusicItem,
-  UploadMusicRequest as RepositoryUploadMusicRequest,
   SubscriptionLike,
-} from "@/repository/musicRepository";
-
-export type MusicItem = RepositoryMusicItem;
-export type UploadMusicRequest = RepositoryUploadMusicRequest;
+} from "@/domain/repositories/musicRepository";
 
 export const useMusicStore = defineStore("music", () => {
   let repository: MusicRepository | null = null;
+  let usecase: MusicUsecase | null = null;
   let musicListSubscription: SubscriptionLike | null = null;
 
   // DynamoDBのMetadata
-  const musicList = ref<MusicItem[]>([]);
-  const selectedMusic = ref<MusicItem | null>(null);
+  const musicList = ref<MusicMetadataDto[]>([]);
+  const selectedMusic = ref<MusicMetadataDto | null>(null);
   // S3のMusic本体
   const selectedMusicUrl = ref<URL | null>(null);
   // UI State
@@ -37,15 +43,28 @@ export const useMusicStore = defineStore("music", () => {
     repository = next;
   };
 
+  const requireUsecase = (): MusicUsecase => {
+    if (!usecase) {
+      throw new Error(
+        "MusicUsecase is not set. Call useMusicStore(pinia).setMusicUsecase() in main.ts.",
+      );
+    }
+    return usecase;
+  };
+
+  const setMusicUsecase = (next: MusicUsecase): void => {
+    usecase = next;
+  };
+
   const startMusicListSubscription = (): void => {
     if (musicListSubscription) return;
 
     loading.value = true;
     error.value = null;
 
-    musicListSubscription = requireRepository().observeMusicList(
+    musicListSubscription = requireRepository().observeMusicMetadata(
       (items) => {
-        musicList.value = items;
+        musicList.value = items.map(toMusicMetadataDto);
         loading.value = false;
       },
       (e) => {
@@ -65,7 +84,8 @@ export const useMusicStore = defineStore("music", () => {
     loading.value = true;
     error.value = null;
     try {
-      musicList.value = await requireRepository().listMusic();
+      const items = await requireRepository().listMusicMetadata();
+      musicList.value = items.map(toMusicMetadataDto);
     } catch (e) {
       error.value =
         e instanceof Error ? e.message : "音楽一覧の取得に失敗しました";
@@ -74,7 +94,7 @@ export const useMusicStore = defineStore("music", () => {
     }
   }
 
-  async function fetchMusic(music: MusicItem): Promise<void> {
+  async function fetchMusic(music: MusicMetadataDto): Promise<void> {
     loading.value = true;
     error.value = null;
     try {
@@ -95,7 +115,18 @@ export const useMusicStore = defineStore("music", () => {
     loading.value = true;
     error.value = null;
     try {
-      await requireRepository().uploadMusic(music);
+      const title =
+        music.title ?? music.musicFile.name.replace(/\.[^/.]+$/, "");
+      const durationSeconds = music.durationSeconds ?? 0;
+
+      const request: MusicUploadDto = {
+        title,
+        durationSeconds,
+        musicAudio: await fileToBinaryObjectDto(music.musicFile),
+        artworkImage: await fileToBinaryObjectDto(music.artworkFile),
+      };
+
+      await requireUsecase().uploadMusic(request);
     } catch (e) {
       error.value =
         e instanceof Error ? e.message : "音楽のアップロードに失敗しました";
@@ -112,7 +143,9 @@ export const useMusicStore = defineStore("music", () => {
     error.value = null;
 
     try {
-      await requireRepository().removeMusic(selectedMusic.value);
+      await requireRepository().removeMusic(
+        toMusicMetadataEntityLike(selectedMusic.value),
+      );
       selectedMusic.value = null;
       selectedMusicUrl.value = null;
       await fetchMusicList();
@@ -126,6 +159,7 @@ export const useMusicStore = defineStore("music", () => {
 
   return {
     setRepository,
+    setMusicUsecase,
     musicList,
     selectedMusic,
     selectedMusicUrl,

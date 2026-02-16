@@ -42,10 +42,10 @@
 </template>
 
 <script setup lang="ts">
-import MusicListPlayer from "@/components/MusicListPlayer.vue";
-import PageShell from "@/components/PageShell.vue";
-import { useMusicPlayerStore } from "@/stores/useMusicPlayerStore";
-import { useMusicStore } from "@/stores/useMusicStore";
+import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
+import { useMusicStore } from "@/presentation/stores/useMusicStore";
+import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
+import PageShell from "@/presentation/view/components/PageShell.vue";
 import { ref } from "vue";
 
 const musicStore = useMusicStore();
@@ -55,7 +55,8 @@ const selectedMusicFile = ref<File | null>(null);
 const selectedArtworkFile = ref<File | null>(null);
 const selectedMusicDurationSeconds = ref<number | null>(null);
 
-const baseName = (filename: string): string => filename.replace(/\.[^/.]+$/, "");
+const baseName = (filename: string): string =>
+  filename.replace(/\.[^/.]+$/, "");
 
 const getAudioDurationSeconds = (file: File): Promise<number> =>
   new Promise((resolve, reject) => {

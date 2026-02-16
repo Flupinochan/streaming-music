@@ -10,9 +10,15 @@ import "vuetify/styles";
 import colors from "vuetify/util/colors";
 import outputs from "../amplify_outputs.json";
 import App from "./App.vue";
-import { AmplifyMusicRepository } from "./repository/amplifyMusicRepository";
+import { createHowlerMusicPlayer } from "./infrastructure/gateways/howlerMusicPlayerFactory";
+import { MusicDataRepositoryAmplify } from "./infrastructure/repositories/musicDataRepositoryAmplify";
+import { MusicDataRepositoryImpl } from "./infrastructure/repositories/musicDataRepositoryImpl";
+import { MusicMetadataRepositoryAmplify } from "./infrastructure/repositories/musicMetadataRepositoryAmplify";
+import { MusicMetadataRepositoryImpl } from "./infrastructure/repositories/musicMetadataRepositoryImpl";
+import { useMusicPlayerStore } from "./presentation/stores/useMusicPlayerStore";
+import { useMusicStore } from "./presentation/stores/useMusicStore";
 import { router } from "./router";
-import { useMusicStore } from "./stores/useMusicStore";
+import { CreateMusicUsecase } from "./use_cases/createMusicUsecase";
 
 Amplify.configure(outputs);
 
@@ -49,6 +55,18 @@ const vuetify = createVuetify({
 const app = createApp(App).use(pinia).use(vuetify).use(router);
 
 // DI
-useMusicStore(pinia).setRepository(new AmplifyMusicRepository());
+const musicRepository = new MusicDataRepositoryImpl(
+  new MusicDataRepositoryAmplify(),
+);
+const musicMetadataRepository = new MusicMetadataRepositoryImpl(
+  new MusicMetadataRepositoryAmplify(),
+);
+const createMusicUsecase = new CreateMusicUsecase(
+  musicRepository,
+  musicMetadataRepository,
+);
+useMusicStore(pinia).setRepository(musicRepository);
+useMusicStore(pinia).setMusicUsecase(createMusicUsecase);
+useMusicPlayerStore(pinia).setMusicPlayerFactory(createHowlerMusicPlayer);
 
 app.mount("#app");

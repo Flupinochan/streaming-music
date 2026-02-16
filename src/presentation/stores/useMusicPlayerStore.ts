@@ -1,12 +1,31 @@
-import { Howl } from "howler";
+import type {
+  MusicPlayer,
+  MusicPlayerFactory,
+} from "@/domain/gateways/musicPlayer";
+import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { useMusicStore, type MusicItem } from "./useMusicStore";
+import { useMusicStore } from "./useMusicStore";
 
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   const musicStore = useMusicStore();
 
-  const sound = ref<Howl | null>(null);
+  let musicPlayerFactory: MusicPlayerFactory | null = null;
+
+  const requireMusicPlayerFactory = (): MusicPlayerFactory => {
+    if (!musicPlayerFactory) {
+      throw new Error(
+        "MusicPlayerFactory is not set. Call useMusicPlayerStore(pinia).setMusicPlayerFactory() in main.ts.",
+      );
+    }
+    return musicPlayerFactory;
+  };
+
+  const setMusicPlayerFactory = (next: MusicPlayerFactory): void => {
+    musicPlayerFactory = next;
+  };
+
+  const sound = ref<MusicPlayer | null>(null);
   const musicUrl = ref<string | null>(null);
   const isPlaying = ref(false);
   const activeS3Path = ref<string | null>(null);
@@ -40,7 +59,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
 
   // Shuffle all tracks
   const shuffleAll = ref(false);
-  const shufflePool = ref<MusicItem[]>([]);
+  const shufflePool = ref<MusicMetadataDto[]>([]);
 
   const resetSound = (): void => {
     stopPositionTimer();
@@ -58,7 +77,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     isSeeking.value = false;
   };
 
-  const setNowPlaying = (music: Pick<MusicItem, "s3Path" | "title">): void => {
+  const setNowPlaying = (
+    music: Pick<MusicMetadataDto, "s3Path" | "title">,
+  ): void => {
     activeS3Path.value = music.s3Path;
     activeMusicTitle.value = music.title;
   };
@@ -84,57 +105,68 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     return `${format(positionSeconds.value)} / ${format(durationSeconds.value)}`;
   });
 
-  const createHowlInstance = (url: string): Howl =>
-    new Howl({
-      src: [url],
-      html5: true,
-      loop: repeatOne.value,
-      pool: 1,
-      onload: (): void => {
-        durationSeconds.value =
-          sound.value?.duration() || durationSeconds.value;
-      },
-      onplay: (): void => {
-        isPlaying.value = true;
-        startPositionTimer();
+  // Event初期化
+  const attachPlayerHandlers = (): void => {
+    if (!sound.value) return;
 
-        if (!("mediaSession" in navigator)) return;
-        const title = activeMusicTitle.value ?? activeS3Path.value;
-        if (!title) return;
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title,
-        });
-      },
-      onpause: (): void => {
-        isPlaying.value = false;
-        stopPositionTimer();
-      },
-      onstop: (): void => {
-        isPlaying.value = false;
-        stopPositionTimer();
-        positionSeconds.value = 0;
-      },
-      onend: (): void => {
-        if (!repeatOne.value && shuffleAll.value) {
-          void playNextShuffle();
-          return;
-        }
-        isPlaying.value = false;
-        stopPositionTimer();
-        positionSeconds.value = 0;
-      },
+    sound.value.off("load").on("load", (): void => {
+      durationSeconds.value = sound.value?.duration() || durationSeconds.value;
     });
+
+    sound.value.off("play").on("play", (): void => {
+      isPlaying.value = true;
+      startPositionTimer();
+
+      if (!("mediaSession" in navigator)) return;
+      const title = activeMusicTitle.value ?? activeS3Path.value;
+      if (!title) return;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title,
+      });
+    });
+
+    sound.value.off("pause").on("pause", (): void => {
+      isPlaying.value = false;
+      stopPositionTimer();
+    });
+
+    sound.value.off("stop").on("stop", (): void => {
+      isPlaying.value = false;
+      stopPositionTimer();
+      positionSeconds.value = 0;
+    });
+
+    sound.value.off("end").on("end", (): void => {
+      if (!repeatOne.value && shuffleAll.value) {
+        void playNextShuffle();
+        return;
+      }
+      isPlaying.value = false;
+      stopPositionTimer();
+      positionSeconds.value = 0;
+    });
+  };
+
+  const createMusicPlayerInstance = (url: string): MusicPlayer => {
+    const player = requireMusicPlayerFactory()({
+      src: url,
+      loop: repeatOne.value,
+    });
+    return player;
+  };
 
   const loadFromFile = (file: File): void => {
     resetSound();
     musicUrl.value = URL.createObjectURL(file);
-    sound.value = createHowlInstance(musicUrl.value);
+    sound.value = createMusicPlayerInstance(musicUrl.value);
+    attachPlayerHandlers();
   };
 
   const loadFromUrl = (url: string): void => {
     resetSound();
     musicUrl.value = url;
-    sound.value = createHowlInstance(url);
+    sound.value = createMusicPlayerInstance(url);
+    attachPlayerHandlers();
   };
 
   // toggleShuffleAll時にmusicList配列をコピーし、1つずつランダムに再生/削除していく
@@ -179,11 +211,12 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   };
 
   const play = (): number | undefined => sound.value?.play();
-  const pause = (): Howl | undefined => sound.value?.pause();
-  const stop = (): Howl | undefined => sound.value?.stop();
+  const pause = (): MusicPlayer | undefined => sound.value?.pause();
+  const stop = (): MusicPlayer | undefined => sound.value?.stop();
   const cleanup = (): void => resetSound();
 
   return {
+    setMusicPlayerFactory,
     isPlaying,
     musicUrl,
     repeatOne,
