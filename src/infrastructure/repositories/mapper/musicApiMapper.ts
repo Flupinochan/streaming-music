@@ -4,8 +4,8 @@ import type { MusicDataPath } from "@/domain/value_objects/musicDataPath";
 import {
   UploadArtworkImageInputDto,
   UploadMusicDataInputDto,
-} from "@/infrastructure/dto/musicDataApiDtos";
-import { binaryObjectToBinaryObjectDto } from "@/infrastructure/mappers/binaryObjectMapper";
+} from "@/infrastructure/repositories/dto/musicDataApiDtos";
+import { binaryObjectToBinaryObjectDto } from "@/infrastructure/repositories/mapper/binaryObjectMapper";
 
 export const createUploadMusicDto = (
   musicDataPath: MusicDataPath,

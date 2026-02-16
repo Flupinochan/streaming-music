@@ -7,11 +7,11 @@ import type { MusicPath } from "@/domain/value_objects/musicPath";
 import type {
   UploadArtworkImageInputDto,
   UploadMusicDataInputDto,
-} from "@/infrastructure/dto/musicDataApiDtos";
+} from "@/infrastructure/repositories/dto/musicDataApiDtos";
 import {
   createUploadArtworkDto,
   createUploadMusicDto,
-} from "@/infrastructure/mappers/musicApiMapper";
+} from "@/infrastructure/repositories/mapper/musicApiMapper";
 import { MusicDataRepositoryAmplify } from "./musicDataRepositoryAmplify";
 
 export class MusicDataRepositoryImpl implements MusicDataRepository {

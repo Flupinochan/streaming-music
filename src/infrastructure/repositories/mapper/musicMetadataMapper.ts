@@ -1,11 +1,11 @@
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
-import { MusicMetadataDto } from "@/infrastructure/dto/musicMetadataDto";
 import type {
   AmplifyMusicMetadataCreateInput,
   AmplifyMusicMetadataItem,
 } from "@/infrastructure/repositories/amplifyClient";
+import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
 
 // Entity to DTO
 export const musicMetadataToMusicMetadataDto = (

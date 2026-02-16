@@ -1,5 +1,5 @@
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
-import { CreateMusicMetadataRequestDto } from "@/infrastructure/dto/musicMetadataApiDtos";
+import { CreateMusicMetadataRequestDto } from "@/infrastructure/repositories/dto/musicMetadataApiDtos";
 
 export const toCreateMusicMetadataRequestDto = (
   entity: Omit<MusicMetadata, "id">,

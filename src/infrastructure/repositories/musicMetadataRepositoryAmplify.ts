@@ -1,9 +1,9 @@
-import { MusicMetadataDto } from "@/infrastructure/dto/musicMetadataDto";
+import { client } from "@/infrastructure/repositories/amplifyClient";
+import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
 import {
   amplifyModelToMusicMetadataDto,
   musicMetadataDtoToCreateAmplifyModel,
-} from "@/infrastructure/mappers/musicMetadataMapper";
-import { client } from "@/infrastructure/repositories/amplifyClient";
+} from "@/infrastructure/repositories/mapper/musicMetadataMapper";
 
 export class MusicMetadataRepositoryAmplify {
   observeMusicMetadata(

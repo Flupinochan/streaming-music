@@ -1,7 +1,7 @@
 import type {
   UploadArtworkImageInputDto,
   UploadMusicDataInputDto,
-} from "@/infrastructure/dto/musicDataApiDtos";
+} from "@/infrastructure/repositories/dto/musicDataApiDtos";
 import { getUrl, remove, uploadData } from "aws-amplify/storage";
 
 export class MusicDataRepositoryAmplify {

@@ -1,8 +1,8 @@
 import type { MusicMetadata } from "@/domain/entities/musicMetadata";
 import type { MusicMetadataRepository } from "@/domain/repositories/musicMetadataRepository";
-import { musicMetadataDtoToMusicMetadata } from "@/infrastructure/mappers/musicMetadataMapper";
+import { musicMetadataDtoToMusicMetadata } from "@/infrastructure/repositories/mapper/musicMetadataMapper";
 import { MusicMetadataRepositoryAmplify } from "@/infrastructure/repositories/musicMetadataRepositoryAmplify";
-import { toCreateMusicMetadataRequestDto } from "../mappers/musicMetadataApiMapper";
+import { toCreateMusicMetadataRequestDto } from "./mapper/musicMetadataApiMapper";
 
 export class MusicMetadataRepositoryImpl implements MusicMetadataRepository {
   private readonly repo: MusicMetadataRepositoryAmplify;
