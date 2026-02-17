@@ -15,4 +15,8 @@ export class MusicDataPath extends MusicPath {
   static createFromFileName(fileName: string): MusicDataPath {
     return new MusicDataPath(`music/audio/${fileName}`);
   }
+
+  toString(): string {
+    return this.value;
+  }
 }

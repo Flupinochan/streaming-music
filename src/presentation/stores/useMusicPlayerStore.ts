@@ -2,7 +2,8 @@ import type {
   MusicPlayer,
   MusicPlayerFactory,
 } from "@/domain/gateways/musicPlayer";
-import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
+import type { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useMusicStore } from "./useMusicStore";
@@ -77,10 +78,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     isSeeking.value = false;
   };
 
-  const setNowPlaying = (
-    music: Pick<MusicMetadataDto, "s3Path" | "title">,
-  ): void => {
-    activeS3Path.value = music.s3Path;
+  const setNowPlaying = (music: SubMusicMetadataDto): void => {
+    activeS3Path.value = music.musicS3Path;
     activeMusicTitle.value = music.title;
   };
 
@@ -185,7 +184,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     }
 
     setNowPlaying(nextItem);
-    await musicStore.fetchMusic(nextItem);
+    await musicStore.fetchMusic({ musicDataPath: nextItem.musicS3Path });
     const url = musicStore.selectedMusicUrl?.toString();
     if (!url) return;
 

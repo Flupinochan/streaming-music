@@ -1,19 +1,13 @@
 import type { MusicDataRepository } from "@/domain/repositories/musicDataRepository";
 import type { MusicMetadataRepository } from "@/domain/repositories/musicMetadataRepository";
 import type { CreateMusicDto } from "@/use_cases/createMusicDto";
-import { createMusicInputToMusicMetadata } from "./createMusicMapper";
+import { createMusicDtoToCreateMusicInput } from "./createMusicMapper";
 
 export class CreateMusicUsecase {
-  private readonly musicDataRepository: MusicDataRepository;
-  private readonly musicMetadataRepository: MusicMetadataRepository;
-
   constructor(
-    musicDataRepository: MusicDataRepository,
-    musicMetadataRepository: MusicMetadataRepository,
-  ) {
-    this.musicDataRepository = musicDataRepository;
-    this.musicMetadataRepository = musicMetadataRepository;
-  }
+    private readonly musicDataRepository: MusicDataRepository,
+    private readonly musicMetadataRepository: MusicMetadataRepository,
+  ) {}
 
   async uploadMusic(input: CreateMusicDto): Promise<void> {
     const {
@@ -22,7 +16,7 @@ export class CreateMusicUsecase {
       artworkImagePath,
       artworkImage,
       musicMetadata,
-    } = await createMusicInputToMusicMetadata(input);
+    } = await createMusicDtoToCreateMusicInput(input);
 
     await Promise.all([
       this.musicDataRepository.uploadMusicData(musicDataPath, musicData),

@@ -98,7 +98,8 @@ describe("MusicDataRepository integration", () => {
     await repo.uploadMusicData(path, music);
     createdPaths.push(path);
     const url = await repo.getMusicDataUrl(path);
-    expect(() => new URL(String(url))).not.toThrow();
+    const isUrl = url instanceof URL;
+    expect(isUrl).toBe(true);
   });
 
   it("uploadArtworkImage", async () => {
@@ -110,10 +111,10 @@ describe("MusicDataRepository integration", () => {
   it("remove", async () => {
     const { path: musicPath, music } = makeMusicArgs("remove-music");
     await repo.uploadMusicData(musicPath, music);
-    await expect(repo.remove(musicPath)).resolves.toBeUndefined();
+    await repo.remove(musicPath);
 
     const { path: artworkPath, image } = makeArtworkArgs("remove-artwork");
     await repo.uploadArtworkImage(artworkPath, image);
-    await expect(repo.remove(artworkPath)).resolves.toBeUndefined();
+    await repo.remove(artworkPath);
   });
 });

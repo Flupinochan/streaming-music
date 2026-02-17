@@ -19,6 +19,9 @@ import { useMusicPlayerStore } from "./presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "./presentation/stores/useMusicStore";
 import { router } from "./router";
 import { CreateMusicUsecase } from "./use_cases/createMusicUsecase";
+import { FetchMusicUsecase } from "./use_cases/fetchMusicUsecase";
+import { RemoveMusicUsecase } from "./use_cases/removeMusicUsecase";
+import { SubMusicMetadataUsecase } from "./use_cases/subMusicMetadataUsecase";
 
 Amplify.configure(outputs);
 
@@ -61,12 +64,22 @@ const musicRepository = new MusicDataRepositoryImpl(
 const musicMetadataRepository = new MusicMetadataRepositoryImpl(
   new MusicMetadataRepositoryAmplify(),
 );
+const fetchMusicUsecase = new FetchMusicUsecase(musicRepository);
 const createMusicUsecase = new CreateMusicUsecase(
   musicRepository,
   musicMetadataRepository,
 );
-useMusicStore(pinia).setRepository(musicRepository);
-useMusicStore(pinia).setMusicUsecase(createMusicUsecase);
+const removeMusicUsecase = new RemoveMusicUsecase(
+  musicRepository,
+  musicMetadataRepository,
+);
+const subMusicMetadataUsecase = new SubMusicMetadataUsecase(
+  musicMetadataRepository,
+);
+useMusicStore(pinia).setFetchMusicUsecase(fetchMusicUsecase);
+useMusicStore(pinia).setCreateMusicUsecase(createMusicUsecase);
+useMusicStore(pinia).setRemoveMusicUsecase(removeMusicUsecase);
+useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
 useMusicPlayerStore(pinia).setMusicPlayerFactory(createHowlerMusicPlayer);
 
 app.mount("#app");

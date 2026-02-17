@@ -12,12 +12,12 @@ export const musicMetadataToMusicMetadataDto = (
   musicMetadata: MusicMetadata,
 ): MusicMetadataDto => {
   return new MusicMetadataDto(
+    musicMetadata.id,
     musicMetadata.title,
     musicMetadata.musicDurationSeconds,
     musicMetadata.musicDataBytes,
     musicMetadata.musicDataPath.toString(),
     musicMetadata.artworkImagePath.toString(),
-    musicMetadata.id,
   );
 };
 
@@ -40,12 +40,12 @@ export const amplifyModelToMusicMetadataDto = (
   item: AmplifyMusicMetadataItem,
 ): MusicMetadataDto => {
   return new MusicMetadataDto(
+    item.id,
     item.title,
     item.musicDurationSeconds,
     item.musicDataBytes,
     item.musicDataPath,
     item.artworkImagePath,
-    item.id,
   );
 };
 
@@ -58,5 +58,4 @@ export const musicMetadataDtoToCreateAmplifyModel = (
   musicDataBytes: dto.musicDataBytes,
   musicDataPath: dto.musicS3Path,
   artworkImagePath: dto.artworkS3Path,
-  id: dto.id,
 });

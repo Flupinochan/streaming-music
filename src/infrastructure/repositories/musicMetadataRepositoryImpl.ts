@@ -1,5 +1,10 @@
 import type { MusicMetadata } from "@/domain/entities/musicMetadata";
 import type { MusicMetadataRepository } from "@/domain/repositories/musicMetadataRepository";
+import type {
+  Observable,
+  Observer,
+  Subscription,
+} from "@/domain/repositories/observable";
 import { musicMetadataDtoToMusicMetadata } from "@/infrastructure/repositories/mapper/musicMetadataMapper";
 import { MusicMetadataRepositoryAmplify } from "@/infrastructure/repositories/musicMetadataRepositoryAmplify";
 import { toCreateMusicMetadataRequestDto } from "./mapper/musicMetadataApiMapper";
@@ -11,14 +16,24 @@ export class MusicMetadataRepositoryImpl implements MusicMetadataRepository {
     this.repo = repo;
   }
 
-  observeMusicMetadata(
-    next: (musicMetadata: MusicMetadata[]) => void,
-    error?: (err: unknown) => void,
-  ): { unsubscribe(): void } {
-    return this.repo.observeMusicMetadata(
-      (items) => next(items.map(musicMetadataDtoToMusicMetadata)),
-      error,
-    );
+  observeMusicMetadata(): Observable<MusicMetadata[]> {
+    const source = this.repo.observeMusicMetadata();
+
+    return {
+      subscribe(observer: Observer<MusicMetadata[]>): Subscription {
+        const sub = source.subscribe({
+          next: (dtos) => {
+            const entities = dtos.map(musicMetadataDtoToMusicMetadata);
+            observer.next(entities);
+          },
+          error: (e) => observer.error?.(e),
+        });
+
+        return {
+          unsubscribe: (): void => sub.unsubscribe(),
+        };
+      },
+    };
   }
 
   async listMusicMetadata(): Promise<MusicMetadata[]> {
@@ -26,15 +41,12 @@ export class MusicMetadataRepositoryImpl implements MusicMetadataRepository {
     return items.map(musicMetadataDtoToMusicMetadata);
   }
 
-  async createMusicMetadata(
-    musicMetadata: Omit<MusicMetadata, "id">,
-  ): Promise<void> {
+  async createMusicMetadata(musicMetadata: MusicMetadata): Promise<void> {
     const dto = toCreateMusicMetadataRequestDto(musicMetadata);
     await this.repo.createMusicMetadata(dto);
   }
 
-  async removeMusicMetadata(musicMetadata: MusicMetadata): Promise<void> {
-    if (!musicMetadata.id) throw new Error("musicMetadata.id is undefined");
-    await this.repo.removeMusicMetadata(musicMetadata.id);
+  async removeMusicMetadata(id: string): Promise<void> {
+    await this.repo.removeMusicMetadata(id);
   }
 }

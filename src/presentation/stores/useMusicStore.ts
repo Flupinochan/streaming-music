@@ -1,156 +1,159 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { SubMusicMetadataUsecase } from "./../../use_cases/subMusicMetadataUsecase";
 
-import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
-import type { MusicUploadDto } from "@/presentation/dto/musicUploadDto";
-import type { UploadMusicRequest } from "@/presentation/dto/uploadMusicRequest";
-import { fileToBinaryObjectDto } from "@/presentation/mappers/fileMapper";
-import {
-  toMusicMetadataDto,
-  toMusicMetadataEntityLike,
-} from "@/presentation/mappers/musicMetadataMapper";
-import type { MusicUsecase } from "@/use_cases/music/musicUsecase";
-
-import type {
-  MusicRepository,
-  SubscriptionLike,
-} from "@/domain/repositories/musicRepository";
+import type { CreateMusicDto } from "@/use_cases/createMusicDto";
+import type { CreateMusicUsecase } from "@/use_cases/createMusicUsecase";
+import type { FetchMusicDto } from "@/use_cases/fetchMusicDto";
+import type { FetchMusicUsecase } from "@/use_cases/fetchMusicUsecase";
+import type { RemoveMusicDto } from "@/use_cases/removeMusicDto";
+import type { RemoveMusicUsecase } from "@/use_cases/removeMusicUsecase";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 
 export const useMusicStore = defineStore("music", () => {
-  let repository: MusicRepository | null = null;
-  let usecase: MusicUsecase | null = null;
-  let musicListSubscription: SubscriptionLike | null = null;
+  let fetchMusicUsecase: FetchMusicUsecase | undefined = undefined;
+  let createMusicUsecase: CreateMusicUsecase | undefined = undefined;
+  let removeMusicUsecase: RemoveMusicUsecase | undefined = undefined;
+  let SubMusicMetadataUsecase: SubMusicMetadataUsecase | undefined = undefined;
 
   // DynamoDBのMetadata
-  const musicList = ref<MusicMetadataDto[]>([]);
-  const selectedMusic = ref<MusicMetadataDto | null>(null);
+  const musicList = ref<SubMusicMetadataDto[]>([]);
+  const selectedMusic = ref<SubMusicMetadataDto | undefined>(undefined);
   // S3のMusic本体
-  const selectedMusicUrl = ref<URL | null>(null);
+  const selectedMusicUrl = ref<URL | undefined>(undefined);
   // UI State
   const loading = ref(false);
-  const error = ref<string | null>(null);
+  const error = ref<string | undefined>(undefined);
 
-  const requireRepository = (): MusicRepository => {
-    if (!repository) {
+  let subscription: { unsubscribe: () => void } | undefined = undefined;
+
+  // function用Getter
+  const getFetchMusicUsecase = (): FetchMusicUsecase => {
+    if (!fetchMusicUsecase) {
       throw new Error(
-        "MusicRepository is not set. Call useMusicStore(pinia).setRepository() in main.ts.",
+        "FetchMusicUsecase is not set. Call useMusicStore(pinia).setFetchMusicUsecase() in main.ts.",
       );
     }
-    return repository;
+    return fetchMusicUsecase;
   };
 
-  const setRepository = (next: MusicRepository): void => {
-    repository = next;
-  };
-
-  const requireUsecase = (): MusicUsecase => {
-    if (!usecase) {
+  const getCreateMusicUsecase = (): CreateMusicUsecase => {
+    if (!createMusicUsecase) {
       throw new Error(
-        "MusicUsecase is not set. Call useMusicStore(pinia).setMusicUsecase() in main.ts.",
+        "CreateMusicUsecase is not set. Call useMusicStore(pinia).setCreateMusicUsecase() in main.ts.",
       );
     }
-    return usecase;
+    return createMusicUsecase;
   };
 
-  const setMusicUsecase = (next: MusicUsecase): void => {
-    usecase = next;
+  const getRemoveMusicUsecase = (): RemoveMusicUsecase => {
+    if (!removeMusicUsecase) {
+      throw new Error(
+        "RemoveMusicUsecase is not set. Call useMusicStore(pinia).setRemoveMusicUsecase() in main.ts.",
+      );
+    }
+    return removeMusicUsecase;
   };
 
+  const getSubMusicMetadataUsecase = (): SubMusicMetadataUsecase => {
+    if (!SubMusicMetadataUsecase) {
+      throw new Error(
+        "SubMusicMetadataUsecase is not set. Call useMusicStore(pinia).setSubMusicMetadataUsecase() in main.ts.",
+      );
+    }
+    return SubMusicMetadataUsecase;
+  };
+
+  // DI用Setter
+  const setFetchMusicUsecase = (value: FetchMusicUsecase): void => {
+    fetchMusicUsecase = value;
+  };
+
+  const setCreateMusicUsecase = (value: CreateMusicUsecase): void => {
+    createMusicUsecase = value;
+  };
+
+  const setRemoveMusicUsecase = (value: RemoveMusicUsecase): void => {
+    removeMusicUsecase = value;
+  };
+
+  const setSubMusicMetadataUsecase = (value: SubMusicMetadataUsecase): void => {
+    SubMusicMetadataUsecase = value;
+  };
+
+  // Subscription
   const startMusicListSubscription = (): void => {
-    if (musicListSubscription) return;
+    if (subscription) return;
 
     loading.value = true;
-    error.value = null;
+    error.value = undefined;
+    const usecase = getSubMusicMetadataUsecase();
 
-    musicListSubscription = requireRepository().observeMusicMetadata(
-      (items) => {
-        musicList.value = items.map(toMusicMetadataDto);
+    subscription = usecase.observeMusicMetadata().subscribe({
+      next: (dtos) => {
+        musicList.value = dtos;
         loading.value = false;
       },
-      (e) => {
-        error.value =
-          e instanceof Error ? e.message : "音楽一覧の取得に失敗しました";
+      error: (e) => {
+        const errorMessage = e instanceof Error ? e.message : "";
+        error.value = `音楽リストの購読に失敗しました: ${errorMessage}`;
         loading.value = false;
       },
-    );
+    });
   };
 
   const stopMusicListSubscription = (): void => {
-    musicListSubscription?.unsubscribe();
-    musicListSubscription = null;
+    subscription?.unsubscribe();
+    subscription = undefined;
   };
 
-  async function fetchMusicList(): Promise<void> {
+  async function fetchMusic(dto: FetchMusicDto): Promise<void> {
     loading.value = true;
-    error.value = null;
-    try {
-      const items = await requireRepository().listMusicMetadata();
-      musicList.value = items.map(toMusicMetadataDto);
-    } catch (e) {
-      error.value =
-        e instanceof Error ? e.message : "音楽一覧の取得に失敗しました";
-    } finally {
-      loading.value = false;
-    }
-  }
+    error.value = undefined;
+    const usecase = getFetchMusicUsecase();
 
-  async function fetchMusic(music: MusicMetadataDto): Promise<void> {
-    loading.value = true;
-    error.value = null;
     try {
-      const url = await requireRepository().getMusicUrl(music.s3Path);
-      selectedMusic.value = music;
-      selectedMusicUrl.value = url;
+      // selectedMusic.value = dto.music;
+      selectedMusicUrl.value = await usecase.fetchMusic(dto);
     } catch (e) {
-      error.value = e instanceof Error ? e.message : "音楽の取得に失敗しました";
-      selectedMusic.value = null;
-      selectedMusicUrl.value = null;
+      const errorMessage = e instanceof Error ? e.message : "";
+      error.value = `音楽の取得に失敗しました: ${errorMessage}`;
+      selectedMusic.value = undefined;
+      selectedMusicUrl.value = undefined;
       throw e;
     } finally {
       loading.value = false;
     }
   }
 
-  async function uploadMusic(music: UploadMusicRequest): Promise<void> {
+  async function uploadMusic(dto: CreateMusicDto): Promise<void> {
     loading.value = true;
-    error.value = null;
+    error.value = undefined;
+    const usecase = getCreateMusicUsecase();
+
     try {
-      const title =
-        music.title ?? music.musicFile.name.replace(/\.[^/.]+$/, "");
-      const durationSeconds = music.durationSeconds ?? 0;
-
-      const request: MusicUploadDto = {
-        title,
-        durationSeconds,
-        musicAudio: await fileToBinaryObjectDto(music.musicFile),
-        artworkImage: await fileToBinaryObjectDto(music.artworkFile),
-      };
-
-      await requireUsecase().uploadMusic(request);
+      await usecase.uploadMusic(dto);
     } catch (e) {
-      error.value =
-        e instanceof Error ? e.message : "音楽のアップロードに失敗しました";
+      const errorMessage = e instanceof Error ? e.message : "";
+      error.value = `"音楽のアップロードに失敗しました": ${errorMessage}`;
       throw e;
     } finally {
       loading.value = false;
     }
   }
 
-  async function removeMusic(): Promise<void> {
-    if (!selectedMusic.value) return;
-
+  async function removeMusic(dto: RemoveMusicDto): Promise<void> {
     loading.value = true;
-    error.value = null;
+    error.value = undefined;
+    const usecase = getRemoveMusicUsecase();
 
     try {
-      await requireRepository().removeMusic(
-        toMusicMetadataEntityLike(selectedMusic.value),
-      );
-      selectedMusic.value = null;
-      selectedMusicUrl.value = null;
-      await fetchMusicList();
+      await usecase.removeMusic(dto);
+      selectedMusic.value = undefined;
+      selectedMusicUrl.value = undefined;
     } catch (e) {
-      error.value = e instanceof Error ? e.message : "音楽の削除に失敗しました";
+      const errorMessage = e instanceof Error ? e.message : "";
+      error.value = `音楽の削除に失敗しました: ${errorMessage}`;
       throw e;
     } finally {
       loading.value = false;
@@ -158,8 +161,10 @@ export const useMusicStore = defineStore("music", () => {
   }
 
   return {
-    setRepository,
-    setMusicUsecase,
+    setFetchMusicUsecase,
+    setCreateMusicUsecase,
+    setRemoveMusicUsecase,
+    setSubMusicMetadataUsecase,
     musicList,
     selectedMusic,
     selectedMusicUrl,
@@ -167,7 +172,6 @@ export const useMusicStore = defineStore("music", () => {
     error,
     startMusicListSubscription,
     stopMusicListSubscription,
-    fetchMusicList,
     fetchMusic,
     uploadMusic,
     removeMusic,

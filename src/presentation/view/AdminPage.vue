@@ -55,9 +55,6 @@ const selectedMusicFile = ref<File | null>(null);
 const selectedArtworkFile = ref<File | null>(null);
 const selectedMusicDurationSeconds = ref<number | null>(null);
 
-const baseName = (filename: string): string =>
-  filename.replace(/\.[^/.]+$/, "");
-
 const getAudioDurationSeconds = (file: File): Promise<number> =>
   new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -105,10 +102,9 @@ const handleUpload = async (): Promise<void> => {
   if (!selectedArtworkFile.value) return;
   try {
     await musicStore.uploadMusic({
-      musicFile: selectedMusicFile.value,
-      artworkFile: selectedArtworkFile.value,
-      title: baseName(selectedMusicFile.value.name),
-      durationSeconds: selectedMusicDurationSeconds.value ?? 0,
+      musicDataFile: selectedMusicFile.value,
+      artworkImageFile: selectedArtworkFile.value,
+      musicDurationSeconds: selectedMusicDurationSeconds.value ?? 0,
     });
   } catch (error) {
     console.error("upload error", error);
@@ -118,7 +114,11 @@ const handleUpload = async (): Promise<void> => {
 const handleDelete = async (): Promise<void> => {
   if (!musicStore.selectedMusic) return;
   try {
-    await musicStore.removeMusic();
+    await musicStore.removeMusic({
+      id: musicStore.selectedMusic.id,
+      musicDataPath: musicStore.selectedMusic.musicS3Path,
+      artworkImagePath: musicStore.selectedMusic.artworkS3Path,
+    });
   } catch (error) {
     console.error("delete error", error);
   }

@@ -1,15 +1,10 @@
 // S3に保存する音楽や画像データなどのバイナリデータ
 export class BinaryObject {
-  public readonly data: ArrayBuffer;
-  public readonly size: number;
-  public readonly type: string;
-  public readonly name: string;
-
   protected constructor(
-    data: ArrayBuffer,
-    size: number,
-    type: string,
-    name: string,
+    public readonly data: ArrayBuffer,
+    public readonly size: number,
+    public readonly type: string,
+    public readonly name: string,
   ) {
     if (!type) {
       throw new Error("MIME type is required");

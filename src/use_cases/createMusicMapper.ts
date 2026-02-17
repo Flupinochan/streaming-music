@@ -13,7 +13,7 @@ interface CreateMusicInput {
   musicMetadata: Omit<MusicMetadata, "id">;
 }
 
-export const createMusicInputToMusicMetadata = async (
+export const createMusicDtoToCreateMusicInput = async (
   dto: CreateMusicDto,
 ): Promise<CreateMusicInput> => {
   const musicDataPath = MusicDataPath.createFromFileName(
@@ -29,8 +29,7 @@ export const createMusicInputToMusicMetadata = async (
     ImageBinaryObject.fromFile(dto.artworkImageFile),
   ]);
 
-  const musicMetadata = new MusicMetadata(
-    undefined,
+  const musicMetadata = MusicMetadata.create(
     musicData.musicTitle,
     dto.musicDurationSeconds,
     musicData.size,

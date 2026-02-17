@@ -7,16 +7,16 @@
   >
     <v-list-item
       v-for="music in musicStore.musicList"
-      :key="music.s3Path"
-      :value="music.s3Path"
+      :key="music.musicS3Path"
+      :value="music.musicS3Path"
       @click="handleSelectMusic(music)"
     >
       <v-list-item-title>{{
         music.title +
         " - " +
-        Math.floor(music.durationSeconds / 60) +
+        Math.floor(music.musicDurationSeconds / 60) +
         "分 " +
-        (music.fileSize / 1024 / 1024).toFixed(1) +
+        (music.musicDataBytes / 1024 / 1024).toFixed(1) +
         "MB"
       }}</v-list-item-title>
     </v-list-item>
@@ -71,9 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import type { MusicMetadataDto } from "@/presentation/dto/musicMetadataDto";
 import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import { computed, onMounted, onUnmounted, watch } from "vue";
 
 const musicStore = useMusicStore();
@@ -94,10 +94,10 @@ const sliderSeconds = computed<number>({
   },
 });
 
-const handleSelectMusic = async (music: MusicMetadataDto): Promise<void> => {
+const handleSelectMusic = async (music: SubMusicMetadataDto): Promise<void> => {
   musicPlayerStore.setNowPlaying(music);
   try {
-    await musicStore.fetchMusic(music);
+    await musicStore.fetchMusic({ musicDataPath: music.musicS3Path });
     if (musicStore.selectedMusicUrl) {
       musicPlayerStore.loadFromUrl(musicStore.selectedMusicUrl.toString());
     }

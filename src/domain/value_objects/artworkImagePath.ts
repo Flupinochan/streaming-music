@@ -15,4 +15,8 @@ export class ArtworkImagePath extends MusicPath {
   static createFromFileName(fileName: string): ArtworkImagePath {
     return new ArtworkImagePath(`music/artwork/${fileName}`);
   }
+
+  toString(): string {
+    return this.value;
+  }
 }

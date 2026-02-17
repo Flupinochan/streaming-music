@@ -1,4 +1,4 @@
-export class MusicMetadataDto {
+export class SubMusicMetadataDto {
   constructor(
     public id: string,
     public title: string,

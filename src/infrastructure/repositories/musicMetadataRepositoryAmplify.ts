@@ -1,3 +1,8 @@
+import type {
+  Observable,
+  Observer,
+  Subscription,
+} from "@/domain/repositories/observable";
 import { client } from "@/infrastructure/repositories/amplifyClient";
 import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
 import {
@@ -6,20 +11,26 @@ import {
 } from "@/infrastructure/repositories/mapper/musicMetadataMapper";
 
 export class MusicMetadataRepositoryAmplify {
-  observeMusicMetadata(
-    next: (items: MusicMetadataDto[]) => void,
-    error?: (err: unknown) => void,
-  ): { unsubscribe(): void } {
-    const subscription = client.models.MusicMetadata.observeQuery({
-      authMode: "iam",
-    }).subscribe({
-      next: ({ items }) => {
-        next((items ?? []).map((it) => amplifyModelToMusicMetadataDto(it)));
-      },
-      error: (e) => error?.(e),
-    });
+  observeMusicMetadata(): Observable<MusicMetadataDto[]> {
+    return {
+      subscribe(observer: Observer<MusicMetadataDto[]>): Subscription {
+        const amplifySub = client.models.MusicMetadata.observeQuery({
+          authMode: "iam",
+        }).subscribe({
+          next: ({ items }) => {
+            const dtos = items.map((item) =>
+              amplifyModelToMusicMetadataDto(item),
+            );
+            observer.next(dtos);
+          },
+          error: (e) => observer.error?.(e),
+        });
 
-    return { unsubscribe: () => subscription.unsubscribe() };
+        return {
+          unsubscribe: (): void => amplifySub.unsubscribe(),
+        };
+      },
+    };
   }
 
   async listMusicMetadata(): Promise<MusicMetadataDto[]> {

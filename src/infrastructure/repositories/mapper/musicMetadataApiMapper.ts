@@ -2,9 +2,10 @@ import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import { CreateMusicMetadataRequestDto } from "@/infrastructure/repositories/dto/musicMetadataApiDtos";
 
 export const toCreateMusicMetadataRequestDto = (
-  entity: Omit<MusicMetadata, "id">,
+  entity: MusicMetadata,
 ): CreateMusicMetadataRequestDto => {
   return new CreateMusicMetadataRequestDto(
+    entity.id,
     entity.title,
     entity.musicDurationSeconds,
     entity.musicDataBytes,
