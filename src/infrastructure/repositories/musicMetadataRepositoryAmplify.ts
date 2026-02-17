@@ -14,8 +14,9 @@ export class MusicMetadataRepositoryAmplify {
   observeMusicMetadata(): Observable<MusicMetadataDto[]> {
     return {
       subscribe(observer: Observer<MusicMetadataDto[]>): Subscription {
+        // authModeはSchema定義と同じようにuserPoolを指定
         const amplifySub = client.models.MusicMetadata.observeQuery({
-          authMode: "iam",
+          authMode: "userPool",
         }).subscribe({
           next: ({ items }) => {
             const dtos = items.map((item) =>

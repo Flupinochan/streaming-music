@@ -93,7 +93,6 @@ export const useMusicStore = defineStore("music", () => {
       next: (dtos) => {
         musicList.value = dtos;
         loading.value = false;
-        console.log("Received music metadata update:", dtos);
       },
       error: (e) => {
         const errorMessage = e instanceof Error ? e.message : "";
