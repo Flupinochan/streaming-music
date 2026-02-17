@@ -14,7 +14,7 @@ export const useMusicStore = defineStore("music", () => {
   let fetchMusicUsecase: FetchMusicUsecase | undefined = undefined;
   let createMusicUsecase: CreateMusicUsecase | undefined = undefined;
   let removeMusicUsecase: RemoveMusicUsecase | undefined = undefined;
-  let SubMusicMetadataUsecase: SubMusicMetadataUsecase | undefined = undefined;
+  let subMusicMetadataUsecase: SubMusicMetadataUsecase | undefined = undefined;
 
   // DynamoDBのMetadata
   const musicList = ref<SubMusicMetadataDto[]>([]);
@@ -56,12 +56,12 @@ export const useMusicStore = defineStore("music", () => {
   };
 
   const getSubMusicMetadataUsecase = (): SubMusicMetadataUsecase => {
-    if (!SubMusicMetadataUsecase) {
+    if (!subMusicMetadataUsecase) {
       throw new Error(
         "SubMusicMetadataUsecase is not set. Call useMusicStore(pinia).setSubMusicMetadataUsecase() in main.ts.",
       );
     }
-    return SubMusicMetadataUsecase;
+    return subMusicMetadataUsecase;
   };
 
   // DI用Setter
@@ -78,7 +78,7 @@ export const useMusicStore = defineStore("music", () => {
   };
 
   const setSubMusicMetadataUsecase = (value: SubMusicMetadataUsecase): void => {
-    SubMusicMetadataUsecase = value;
+    subMusicMetadataUsecase = value;
   };
 
   // Subscription
@@ -93,6 +93,7 @@ export const useMusicStore = defineStore("music", () => {
       next: (dtos) => {
         musicList.value = dtos;
         loading.value = false;
+        console.log("Received music metadata update:", dtos);
       },
       error: (e) => {
         const errorMessage = e instanceof Error ? e.message : "";
