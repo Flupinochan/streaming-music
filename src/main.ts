@@ -1,5 +1,7 @@
 import { mdiFileImage } from "@mdi/js";
+import type { MusicMetadataSchema } from "amplify/data/resource";
 import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 import { createVuetify } from "vuetify";
@@ -24,6 +26,18 @@ import { RemoveMusicUsecase } from "./use_cases/removeMusicUsecase";
 import { SubMusicMetadataUsecase } from "./use_cases/subMusicMetadataUsecase";
 
 Amplify.configure(outputs);
+const client = generateClient<MusicMetadataSchema>();
+
+export type AmplifyMusicMetadataItem =
+  Awaited<
+    ReturnType<(typeof client)["models"]["MusicMetadata"]["list"]>
+  > extends { data: (infer I)[] }
+    ? I
+    : never;
+
+export type AmplifyMusicMetadataCreateInput = Parameters<
+  (typeof client)["models"]["MusicMetadata"]["create"]
+>[0];
 
 const pinia = createPinia();
 
@@ -62,7 +76,7 @@ const musicRepository = new MusicDataRepositoryImpl(
   new MusicDataRepositoryAmplify(),
 );
 const musicMetadataRepository = new MusicMetadataRepositoryImpl(
-  new MusicMetadataRepositoryAmplify(),
+  new MusicMetadataRepositoryAmplify(client),
 );
 const fetchMusicUsecase = new FetchMusicUsecase(musicRepository);
 const createMusicUsecase = new CreateMusicUsecase(

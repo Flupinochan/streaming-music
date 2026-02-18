@@ -47,7 +47,7 @@ describe("MusicDataRepository integration", () => {
   afterAll(async () => {
     // cleanup uploaded files from other tests
     for (const p of createdPaths) {
-      await repo.remove(p);
+      await repo.remove(p).catch(() => {});
     }
 
     await signOut().catch(() => {});

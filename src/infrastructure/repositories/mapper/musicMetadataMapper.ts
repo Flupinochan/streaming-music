@@ -1,11 +1,11 @@
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
+import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
 import type {
   AmplifyMusicMetadataCreateInput,
   AmplifyMusicMetadataItem,
-} from "@/infrastructure/repositories/amplifyClient";
-import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
+} from "@/main";
 
 // Entity to DTO
 export const musicMetadataToMusicMetadataDto = (
@@ -53,6 +53,7 @@ export const amplifyModelToMusicMetadataDto = (
 export const musicMetadataDtoToCreateAmplifyModel = (
   dto: MusicMetadataDto,
 ): AmplifyMusicMetadataCreateInput => ({
+  id: dto.id,
   title: dto.title,
   musicDurationSeconds: dto.musicDurationSeconds,
   musicDataBytes: dto.musicDataBytes,

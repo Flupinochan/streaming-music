@@ -95,6 +95,7 @@ const sliderSeconds = computed<number>({
 });
 
 const handleSelectMusic = async (music: SubMusicMetadataDto): Promise<void> => {
+  musicStore.selectedMusic = music;
   musicPlayerStore.setNowPlaying(music);
   try {
     await musicStore.fetchMusic({ musicDataPath: music.musicS3Path });

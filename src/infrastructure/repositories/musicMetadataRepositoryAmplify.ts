@@ -3,19 +3,22 @@ import type {
   Observer,
   Subscription,
 } from "@/domain/repositories/observable";
-import { client } from "@/infrastructure/repositories/amplifyClient";
 import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
 import {
   amplifyModelToMusicMetadataDto,
   musicMetadataDtoToCreateAmplifyModel,
 } from "@/infrastructure/repositories/mapper/musicMetadataMapper";
+import type { MusicMetadataSchema } from "amplify/data/resource";
+import type { V6Client } from "node_modules/@aws-amplify/api-graphql/dist/esm/types";
 
 export class MusicMetadataRepositoryAmplify {
+  constructor(private readonly client: V6Client<MusicMetadataSchema>) {}
+
   observeMusicMetadata(): Observable<MusicMetadataDto[]> {
     return {
-      subscribe(observer: Observer<MusicMetadataDto[]>): Subscription {
+      subscribe: (observer: Observer<MusicMetadataDto[]>): Subscription => {
         // authModeはSchema定義と同じようにuserPoolを指定
-        const amplifySub = client.models.MusicMetadata.observeQuery({
+        const amplifySub = this.client.models.MusicMetadata.observeQuery({
           authMode: "userPool",
         }).subscribe({
           next: ({ items }) => {
@@ -28,23 +31,23 @@ export class MusicMetadataRepositoryAmplify {
         });
 
         return {
-          unsubscribe: (): void => amplifySub.unsubscribe(),
+          unsubscribe: () => amplifySub.unsubscribe(),
         };
       },
     };
   }
 
   async listMusicMetadata(): Promise<MusicMetadataDto[]> {
-    const { data, errors } = await client.models.MusicMetadata.list();
-    return data.map((it) => amplifyModelToMusicMetadataDto(it));
+    const { data, errors } = await this.client.models.MusicMetadata.list();
+    return data.map((item) => amplifyModelToMusicMetadataDto(item));
   }
 
   async createMusicMetadata(dto: MusicMetadataDto): Promise<void> {
     const createAmplifyModel = musicMetadataDtoToCreateAmplifyModel(dto);
-    await client.models.MusicMetadata.create(createAmplifyModel);
+    await this.client.models.MusicMetadata.create(createAmplifyModel);
   }
 
   async removeMusicMetadata(id: string): Promise<void> {
-    await client.models.MusicMetadata.delete({ id });
+    await this.client.models.MusicMetadata.delete({ id });
   }
 }
