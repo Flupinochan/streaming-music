@@ -44,3 +44,53 @@ src/
 
 - File (Blob)、HTMLElement、fetch: browser依存のためNG
 - fs、path: Node.js依存のためNG
+
+## 曲選択ロジック
+
+前提
+- queue: 曲のリスト
+- index: 現在再生しているqueue曲リストのindex
+- history: シャッフル用の再生した曲の履歴
+
+以下のマトリクス図
+- シャッフル: 有効/無効
+- リピートモード: none/one/all
+
+### 次の曲を選択するロジック
+
+## シャッフル無効の場合
+
+| リピートモード | 終端でない場合 (index < queue.length - 1) | 終端の場合 (index = queue.length - 1) |
+| -------------- | ----------------------------------------- | ------------------------------------- |
+| none           | index + 1                                 | undefined (再生しない)                |
+| one            | index                                     | index                                 |
+| all            | index + 1                                 | 0 (最初の曲に戻る)                    |
+
+---
+
+## シャッフル有効の場合
+
+| リピートモード | 1曲しかない場合 (queue.length = 1) | 1曲以上ある場合 (queue.length > 1) |
+| -------------- | ---------------------------------- | ---------------------------------- |
+| none           | undefined (再生しない)             | ランダムにqueueから選択            |
+| one            | index                              | index                              |
+| all            | index                              | ランダムにqueueから選択            |
+
+
+### 前の曲を選択するロジック
+
+#### シャッフル無効の場合
+
+| リピートモード | 先頭曲でない場合 (index > 0) | 先頭曲の場合 (index = 0)          |
+| -------------- | ---------------------------- | --------------------------------- |
+| none           | index - 1                    | undefined (再生しない)            |
+| one            | index                        | index                             |
+| all            | index - 1                    | queue.length - 1 (最後の曲に戻る) |
+
+#### シャッフル有効の場合
+
+| リピートモード | historyあり                 | historyなし & 先頭曲でない場合 | historyなし & 先頭曲の場合        |
+| -------------- | --------------------------- | ------------------------------ | --------------------------------- |
+| none           | history[history.length - 1] | index - 1                      | undefined (再生しない)            |
+| one            | index                       | index                          | index                             |
+| all            | history[history.length - 1] | index - 1                      | queue.length - 1 (最後の曲に戻る) |
