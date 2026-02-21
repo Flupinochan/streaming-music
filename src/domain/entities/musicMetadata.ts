@@ -1,10 +1,11 @@
 import type { ArtworkImagePath } from "../value_objects/artworkImagePath";
 import type { MusicDataPath } from "../value_objects/musicDataPath";
+import { TrackId } from "../value_objects/trackId";
 
 // DynamoDBに保存する音楽のメタデータ
 export class MusicMetadata {
   constructor(
-    public readonly id: string,
+    public readonly id: TrackId,
     public readonly title: string,
     public readonly musicDurationSeconds: number,
     public readonly musicDataBytes: number,
@@ -12,7 +13,6 @@ export class MusicMetadata {
     public readonly artworkImagePath: ArtworkImagePath,
   ) {}
 
-  // 作成時はIDがないためIDを生成するが、Amplify側がIDを生成するため利用していない
   static create(
     title: string,
     musicDurationSeconds: number,
@@ -21,7 +21,7 @@ export class MusicMetadata {
     artworkImagePath: ArtworkImagePath,
   ): MusicMetadata {
     return new MusicMetadata(
-      crypto.randomUUID(),
+      TrackId.create(crypto.randomUUID()),
       title,
       musicDurationSeconds,
       musicDataBytes,

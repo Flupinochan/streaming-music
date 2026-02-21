@@ -5,6 +5,7 @@ import type {
   Observer,
   Subscription,
 } from "@/domain/repositories/observable";
+import type { TrackId } from "@/domain/value_objects/trackId";
 import { musicMetadataDtoToMusicMetadata } from "@/infrastructure/repositories/mapper/musicMetadataMapper";
 import { MusicMetadataRepositoryAmplify } from "@/infrastructure/repositories/musicMetadataRepositoryAmplify";
 import { toCreateMusicMetadataRequestDto } from "./mapper/musicMetadataApiMapper";
@@ -46,7 +47,7 @@ export class MusicMetadataRepositoryImpl implements MusicMetadataRepository {
     await this.repo.createMusicMetadata(dto);
   }
 
-  async removeMusicMetadata(id: string): Promise<void> {
-    await this.repo.removeMusicMetadata(id);
+  async removeMusicMetadata(id: TrackId): Promise<void> {
+    await this.repo.removeMusicMetadata(id.toString());
   }
 }

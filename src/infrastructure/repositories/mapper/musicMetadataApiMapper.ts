@@ -5,7 +5,7 @@ export const toCreateMusicMetadataRequestDto = (
   entity: MusicMetadata,
 ): CreateMusicMetadataRequestDto => {
   return new CreateMusicMetadataRequestDto(
-    entity.id,
+    entity.id.toString(),
     entity.title,
     entity.musicDurationSeconds,
     entity.musicDataBytes,

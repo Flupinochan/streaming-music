@@ -25,7 +25,9 @@ src/
 └── use_cases/          # repository、gateway、serviceを利用したdomain層の複合処理、UIからのdto requestをmapperでentityに変換しつつ各domain処理を呼び出す。responseもmapperでentityからdtoに変換して返却
 ```
 
-## ドメイン層で利用してよい型
+## 型について
+
+### ドメイン層で利用してよい型
 
 - [プリミティブ型](https://typescriptbook.jp/reference/values-types-variables/primitive-types)
   - boolean
@@ -40,7 +42,7 @@ src/
 - [WHATWG (URL)](https://ef-carbon.github.io/url/globals.html)
   - 組み込みオブジェクトではないが、browserおよびNode.jsどちらでも利用可能なためOK
 
-## ドメイン層で利用してはいけないbrowser or Node.js依存の型
+### ドメイン層で利用してはいけないbrowser or Node.js依存の型
 
 - File (Blob)、HTMLElement、fetch: browser依存のためNG
 - fs、path: Node.js依存のためNG
@@ -58,7 +60,7 @@ src/
 
 ### 次の曲を選択するロジック
 
-## シャッフル無効の場合
+#### シャッフル無効の場合
 
 | リピートモード | 終端でない場合 (index < queue.length - 1) | 終端の場合 (index = queue.length - 1) |
 | -------------- | ----------------------------------------- | ------------------------------------- |
@@ -68,7 +70,7 @@ src/
 
 ---
 
-## シャッフル有効の場合
+#### シャッフル有効の場合
 
 | リピートモード | 1曲しかない場合 (queue.length = 1) | 1曲以上ある場合 (queue.length > 1) |
 | -------------- | ---------------------------------- | ---------------------------------- |
@@ -94,3 +96,32 @@ src/
 | none           | history[history.length - 1] | index - 1                      | undefined (再生しない)            |
 | one            | index                       | index                          | index                             |
 | all            | history[history.length - 1] | index - 1                      | queue.length - 1 (最後の曲に戻る) |
+
+## AudioEngine/MusicPlayer 2層構造
+
+2層構造に見えるが、audioEngine <- musicPlayer <- front となっており、3層構造に近い状態
+audioEngineが純粋に再生機能を提供し、musicPlayerに再生モード等のロジックを定義
+
+```mermaid
+graph
+  subgraph Domain
+    musicPlayer
+    audioEngine
+  end
+
+  subgraph Gateways
+    musicPlayerImpl
+    howlerAudioEngine
+  end
+
+  subgraph Presentation
+    front
+  end
+
+  howlerAudioEngine --> audioEngine
+  musicPlayerImpl --> musicPlayer
+  musicPlayerImpl --> audioEngine
+  musicPlayer --> audioEngine
+  front --> musicPlayer
+```
+

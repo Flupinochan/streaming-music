@@ -12,7 +12,8 @@ import "vuetify/styles";
 import colors from "vuetify/util/colors";
 import outputs from "../amplify_outputs.json";
 import App from "./App.vue";
-import { createHowlerMusicPlayer } from "./infrastructure/gateways/howlerMusicPlayerFactory";
+import { HowlerAudioEngine } from "./infrastructure/gateways/HowlerAudioEngine";
+import { MusicPlayerImpl } from "./infrastructure/gateways/MusicPlayerImpl";
 import { MusicDataRepositoryAmplify } from "./infrastructure/repositories/musicDataRepositoryAmplify";
 import { MusicDataRepositoryImpl } from "./infrastructure/repositories/musicDataRepositoryImpl";
 import { MusicMetadataRepositoryAmplify } from "./infrastructure/repositories/musicMetadataRepositoryAmplify";
@@ -21,7 +22,6 @@ import { useMusicPlayerStore } from "./presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "./presentation/stores/useMusicStore";
 import { router } from "./router";
 import { CreateMusicUsecase } from "./use_cases/createMusicUsecase";
-import { FetchMusicUsecase } from "./use_cases/fetchMusicUsecase";
 import { RemoveMusicUsecase } from "./use_cases/removeMusicUsecase";
 import { SubMusicMetadataUsecase } from "./use_cases/subMusicMetadataUsecase";
 
@@ -78,7 +78,6 @@ const musicRepository = new MusicDataRepositoryImpl(
 const musicMetadataRepository = new MusicMetadataRepositoryImpl(
   new MusicMetadataRepositoryAmplify(client),
 );
-const fetchMusicUsecase = new FetchMusicUsecase(musicRepository);
 const createMusicUsecase = new CreateMusicUsecase(
   musicRepository,
   musicMetadataRepository,
@@ -90,10 +89,13 @@ const removeMusicUsecase = new RemoveMusicUsecase(
 const subMusicMetadataUsecase = new SubMusicMetadataUsecase(
   musicMetadataRepository,
 );
-useMusicStore(pinia).setFetchMusicUsecase(fetchMusicUsecase);
+const musicPlayer = new MusicPlayerImpl(
+  new HowlerAudioEngine(),
+  musicRepository,
+);
 useMusicStore(pinia).setCreateMusicUsecase(createMusicUsecase);
 useMusicStore(pinia).setRemoveMusicUsecase(removeMusicUsecase);
 useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
-useMusicPlayerStore(pinia).setMusicPlayerFactory(createHowlerMusicPlayer);
+useMusicPlayerStore(pinia).setMusicPlayer(musicPlayer);
 
 app.mount("#app");

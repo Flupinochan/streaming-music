@@ -1,17 +1,18 @@
+import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { SubMusicMetadataUsecase } from "./../../use_cases/subMusicMetadataUsecase";
 
+import type { Track } from "@/domain/gateways/MusicPlayer";
+import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
+import { TrackId } from "@/domain/value_objects/trackId";
 import type { CreateMusicDto } from "@/use_cases/createMusicDto";
 import type { CreateMusicUsecase } from "@/use_cases/createMusicUsecase";
-import type { FetchMusicDto } from "@/use_cases/fetchMusicDto";
-import type { FetchMusicUsecase } from "@/use_cases/fetchMusicUsecase";
 import type { RemoveMusicDto } from "@/use_cases/removeMusicDto";
 import type { RemoveMusicUsecase } from "@/use_cases/removeMusicUsecase";
 import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 
 export const useMusicStore = defineStore("music", () => {
-  let fetchMusicUsecase: FetchMusicUsecase | undefined = undefined;
   let createMusicUsecase: CreateMusicUsecase | undefined = undefined;
   let removeMusicUsecase: RemoveMusicUsecase | undefined = undefined;
   let subMusicMetadataUsecase: SubMusicMetadataUsecase | undefined = undefined;
@@ -19,23 +20,14 @@ export const useMusicStore = defineStore("music", () => {
   // DynamoDBのMetadata
   const musicList = ref<SubMusicMetadataDto[]>([]);
   const selectedMusic = ref<SubMusicMetadataDto | undefined>(undefined);
-  // S3のMusic本体
-  const selectedMusicUrl = ref<URL | undefined>(undefined);
+  const tracks = ref<Track[]>([]);
   // UI State
   const loading = ref(false);
   const error = ref<string | undefined>(undefined);
 
-  let subscription: { unsubscribe: () => void } | undefined = undefined;
+  const musicPlayerStore = useMusicPlayerStore();
 
-  // function用Getter
-  const getFetchMusicUsecase = (): FetchMusicUsecase => {
-    if (!fetchMusicUsecase) {
-      throw new Error(
-        "FetchMusicUsecase is not set. Call useMusicStore(pinia).setFetchMusicUsecase() in main.ts.",
-      );
-    }
-    return fetchMusicUsecase;
-  };
+  let subscription: { unsubscribe: () => void } | undefined = undefined;
 
   const getCreateMusicUsecase = (): CreateMusicUsecase => {
     if (!createMusicUsecase) {
@@ -65,10 +57,6 @@ export const useMusicStore = defineStore("music", () => {
   };
 
   // DI用Setter
-  const setFetchMusicUsecase = (value: FetchMusicUsecase): void => {
-    fetchMusicUsecase = value;
-  };
-
   const setCreateMusicUsecase = (value: CreateMusicUsecase): void => {
     createMusicUsecase = value;
   };
@@ -92,6 +80,12 @@ export const useMusicStore = defineStore("music", () => {
     subscription = usecase.observeMusicMetadata().subscribe({
       next: (dtos) => {
         musicList.value = dtos;
+        tracks.value = dtos.map((dto) => ({
+          id: TrackId.create(dto.id),
+          musicDataPath: new MusicDataPath(dto.musicS3Path),
+        }));
+        // type Trackの弊害がでている。クラスにしたほうが良い
+        musicPlayerStore.setTracks(tracks.value as Track[]);
         loading.value = false;
       },
       error: (e) => {
@@ -106,25 +100,6 @@ export const useMusicStore = defineStore("music", () => {
     subscription?.unsubscribe();
     subscription = undefined;
   };
-
-  async function fetchMusic(dto: FetchMusicDto): Promise<void> {
-    loading.value = true;
-    error.value = undefined;
-    const usecase = getFetchMusicUsecase();
-
-    try {
-      // selectedMusic.value = dto.music;
-      selectedMusicUrl.value = await usecase.fetchMusic(dto);
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "";
-      error.value = `音楽の取得に失敗しました: ${errorMessage}`;
-      selectedMusic.value = undefined;
-      selectedMusicUrl.value = undefined;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  }
 
   async function uploadMusic(dto: CreateMusicDto): Promise<void> {
     loading.value = true;
@@ -150,7 +125,6 @@ export const useMusicStore = defineStore("music", () => {
     try {
       await usecase.removeMusic(dto);
       selectedMusic.value = undefined;
-      selectedMusicUrl.value = undefined;
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "";
       error.value = `音楽の削除に失敗しました: ${errorMessage}`;
@@ -161,18 +135,15 @@ export const useMusicStore = defineStore("music", () => {
   }
 
   return {
-    setFetchMusicUsecase,
     setCreateMusicUsecase,
     setRemoveMusicUsecase,
     setSubMusicMetadataUsecase,
     musicList,
     selectedMusic,
-    selectedMusicUrl,
     loading,
     error,
     startMusicListSubscription,
     stopMusicListSubscription,
-    fetchMusic,
     uploadMusic,
     removeMusic,
   };

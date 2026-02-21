@@ -1,6 +1,6 @@
 <template>
   <v-list
-    v-model:selected="selectedMusicName"
+    v-if="musicStore.selectedMusic"
     selectable
     select-strategy="single-independent"
     :disabled="musicStore.loading"
@@ -8,7 +8,7 @@
     <v-list-item
       v-for="music in musicStore.musicList"
       :key="music.musicS3Path"
-      :value="music.musicS3Path"
+      :value="music"
       @click="handleSelectMusic(music)"
     >
       <v-list-item-title>{{
@@ -22,49 +22,67 @@
     </v-list-item>
   </v-list>
 
-  <div v-if="musicPlayerStore.musicUrl">
+  <div v-if="musicStore.selectedMusic">
     <div class="mb-2">
       <v-slider
         v-model="sliderSeconds"
         :min="0"
-        :max="Math.max(0, musicPlayerStore.durationSeconds)"
+        :max="Math.max(0, musicPlayerStore.playerState.durationSeconds.value)"
         :step="1"
         hide-details
-        @start="musicPlayerStore.isSeeking = true"
-        @end="musicPlayerStore.isSeeking = false"
       />
       <div class="text-caption">
-        {{ musicPlayerStore.timeLabel }}
+        {{ musicPlayerStore.playerState.durationSeconds.getLabel() }}
       </div>
     </div>
 
     <v-btn
-      :disabled="musicPlayerStore.isPlaying"
+      :disabled="musicPlayerStore.isPlaying()"
       @click="musicPlayerStore.play"
     >
       再生
     </v-btn>
     <v-btn
-      :disabled="!musicPlayerStore.isPlaying"
+      :disabled="!musicPlayerStore.isPlaying()"
       @click="musicPlayerStore.pause"
     >
       一時停止
     </v-btn>
     <v-btn @click="musicPlayerStore.stop"> 停止 </v-btn>
     <v-btn
-      :color="musicPlayerStore.repeatOne ? 'primary' : undefined"
-      :variant="musicPlayerStore.repeatOne ? 'elevated' : 'outlined'"
-      @click="musicPlayerStore.toggleRepeatOne"
-    >
-      {{ musicPlayerStore.repeatOne ? "リピート: 有効" : "リピート: 無効" }}
-    </v-btn>
-    <v-btn
-      :color="musicPlayerStore.shuffleAll ? 'primary' : undefined"
-      :variant="musicPlayerStore.shuffleAll ? 'elevated' : 'outlined'"
-      @click="musicPlayerStore.toggleShuffleAll"
+      :color="
+        musicPlayerStore.playerState.repeatMode !== 'none'
+          ? 'primary'
+          : undefined
+      "
+      :variant="
+        musicPlayerStore.playerState.repeatMode !== 'none'
+          ? 'elevated'
+          : 'outlined'
+      "
+      @click="toggleRepeat()"
     >
       {{
-        musicPlayerStore.shuffleAll ? "シャッフル: 有効" : "シャッフル: 無効"
+        musicPlayerStore.playerState.repeatMode === "none"
+          ? "リピート: 無効"
+          : musicPlayerStore.playerState.repeatMode === "one"
+            ? "リピート: 1曲"
+            : "リピート: 全曲"
+      }}
+    </v-btn>
+    <v-btn
+      :color="
+        musicPlayerStore.playerState.shuffleEnabled ? 'primary' : undefined
+      "
+      :variant="
+        musicPlayerStore.playerState.shuffleEnabled ? 'elevated' : 'outlined'
+      "
+      @click="musicPlayerStore.toggleShuffle()"
+    >
+      {{
+        musicPlayerStore.playerState.shuffleEnabled
+          ? "シャッフル: 有効"
+          : "シャッフル: 無効"
       }}
     </v-btn>
   </div>
@@ -79,32 +97,22 @@ import { computed, onMounted, onUnmounted, watch } from "vue";
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 
-const selectedMusicName = computed<string[]>({
-  get: () =>
-    musicPlayerStore.activeS3Path ? [musicPlayerStore.activeS3Path] : [],
+const sliderSeconds = computed<number>({
+  get: () => musicPlayerStore.playerState.positionSeconds.value,
   set: (v) => {
-    musicPlayerStore.activeS3Path = v[0] ?? null;
+    musicPlayerStore.seek(v);
   },
 });
 
-const sliderSeconds = computed<number>({
-  get: () => musicPlayerStore.positionSeconds,
-  set: (v) => {
-    musicPlayerStore.seekTo(v);
-  },
-});
+const toggleRepeat = (): void => {
+  const current = musicPlayerStore.playerState.repeatMode;
+  const next = current === "none" ? "one" : current === "one" ? "all" : "none";
+  musicPlayerStore.setRepeadMode(next);
+};
 
 const handleSelectMusic = async (music: SubMusicMetadataDto): Promise<void> => {
   musicStore.selectedMusic = music;
-  musicPlayerStore.setNowPlaying(music);
-  try {
-    await musicStore.fetchMusic({ musicDataPath: music.musicS3Path });
-    if (musicStore.selectedMusicUrl) {
-      musicPlayerStore.loadFromUrl(musicStore.selectedMusicUrl.toString());
-    }
-  } catch (error) {
-    console.error("select music error", error);
-  }
+  await musicPlayerStore.selectTrack(music.id);
 };
 
 onMounted(async () => {
@@ -116,9 +124,9 @@ onUnmounted(() => {
 });
 
 watch(
-  () => [musicPlayerStore.activeS3Path, musicStore.musicList] as const,
-  async ([currentS3Path, list]) => {
-    if (currentS3Path) return;
+  () => [musicStore.selectedMusic, musicStore.musicList] as const,
+  async ([selectedMusic, list]) => {
+    if (selectedMusic) return;
     if (list.length === 0) return;
     await handleSelectMusic(list[0]);
   },

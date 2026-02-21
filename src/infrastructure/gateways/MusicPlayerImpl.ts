@@ -1,28 +1,33 @@
+import type { AudioEngine } from "@/domain/gateways/AudioEngine";
+import type { MusicDataRepository } from "@/domain/repositories/musicDataRepository";
+import type { TrackId } from "@/domain/value_objects/trackId";
 import type {
-  IAudioEngine,
-  IMusicPlayer,
+  MusicPlayer,
   PlayerState,
   PlayerStatus,
   RepeatMode,
   Track,
-} from "./IMusicPlayer";
+} from "../../domain/gateways/MusicPlayer";
+import { Seconds } from "./../../domain/value_objects/seconds";
 
-export class SimpleMusicPlayer implements IMusicPlayer {
+export class MusicPlayerImpl implements MusicPlayer {
   private status: PlayerStatus = "stopped";
   private repeatMode: RepeatMode = "none";
   private shuffleEnabled = false;
 
   // 曲のリスト
-  private queue: Track[] = [];
+  private tracks: Track[] = [];
   // queue配列の中で現在再生している曲のindex (-1の場合は再生する曲がない状態)
   private index = -1;
   // queue配列の中で再生した曲のindexの履歴 (シャッフル再生時に利用)
   private history: number[] = [];
 
-  private readonly engine: IAudioEngine;
+  private readonly engine: AudioEngine;
+  private readonly musicDataRepo: MusicDataRepository;
 
-  constructor(engine: IAudioEngine) {
+  constructor(engine: AudioEngine, musicDataRepo: MusicDataRepository) {
     this.engine = engine;
+    this.musicDataRepo = musicDataRepo;
     // 曲終了時のルールを設定
     this.engine.onEnd(() => {
       if (this.repeatMode === "one") {
@@ -34,38 +39,49 @@ export class SimpleMusicPlayer implements IMusicPlayer {
   }
 
   // 曲のリストを初期化 (デフォルトでは先頭0番目から再生)
-  setQueue(tracks: Track[], startAt = 0): void {
-    this.queue = tracks;
+  setTracks(tracks: Track[], startAt = 0): void {
+    this.tracks = tracks;
     this.index =
       tracks.length === 0
         ? -1
         : Math.max(0, Math.min(startAt, tracks.length - 1));
     this.history = [];
     this.status = "stopped";
-    this.load();
+  }
+
+  async selectTrack(trackId: TrackId): Promise<void> {
+    const index = this.tracks.findIndex(
+      (track) => track.id.toString() === trackId.toString(),
+    );
+    this.index = index;
+    await this.load();
+    if (this.status === "playing") {
+      this.engine.play();
+    }
+    this.history = [];
   }
 
   play(): void {
     if (this.index < 0) return;
-    this.engine.play();
     this.status = "playing";
+    this.engine.play();
   }
 
   pause(): void {
-    this.engine.pause();
     this.status = "paused";
+    this.engine.pause();
   }
 
   stop(): void {
-    this.engine.stop();
     this.status = "stopped";
+    this.engine.stop();
   }
 
-  seek(seconds: number): void {
-    this.engine.seek(seconds);
+  seek(seconds: Seconds): void {
+    this.engine.seek(seconds.value);
   }
 
-  next(): Track | undefined {
+  async next(): Promise<Track | undefined> {
     const nextIndex = this.calcNextIndex();
     if (nextIndex === undefined) return undefined;
     this.index = nextIndex;
@@ -75,21 +91,21 @@ export class SimpleMusicPlayer implements IMusicPlayer {
       this.history.push(this.index);
     }
     // 一周分再生済みなら履歴をクリア
-    if (this.shuffleEnabled && this.queue.length > 1) {
-      if (this.history.length >= this.queue.length - 1) {
+    if (this.shuffleEnabled && this.tracks.length > 1) {
+      if (this.history.length >= this.tracks.length - 1) {
         this.history = [];
       }
     }
 
-    this.load();
+    await this.load();
     if (this.status === "playing") {
       this.engine.play();
     }
 
-    return this.queue[this.index] ?? undefined;
+    return this.tracks[this.index] ?? undefined;
   }
 
-  previous(): Track | undefined {
+  async previous(): Promise<Track | undefined> {
     const prevIndex = this.calcPreviousIndex();
     if (prevIndex === undefined) return undefined;
     this.index = prevIndex;
@@ -98,12 +114,12 @@ export class SimpleMusicPlayer implements IMusicPlayer {
     const idx = this.history.lastIndexOf(prevIndex);
     if (idx >= 0) this.history.splice(idx, 1);
 
-    this.load();
+    await this.load();
     if (this.status === "playing") {
       this.engine.play();
     }
 
-    return this.queue[this.index] ?? undefined;
+    return this.tracks[this.index] ?? undefined;
   }
 
   setRepeatMode(mode: RepeatMode): void {
@@ -118,32 +134,39 @@ export class SimpleMusicPlayer implements IMusicPlayer {
   getState(): PlayerState {
     return {
       status: this.status,
-      currentTrackId: this.queue[this.index]?.id ?? undefined,
-      positionSeconds: this.engine.getPosition(),
-      durationSeconds: this.engine.getDuration(),
+      currentTrackId: this.tracks[this.index]?.id ?? undefined,
+      positionSeconds: Seconds.createFromSeconds(this.engine.getPosition()),
+      durationSeconds: Seconds.createFromSeconds(this.engine.getDuration()),
       repeatMode: this.repeatMode,
       shuffleEnabled: this.shuffleEnabled,
     };
+  }
+
+  isPlaying(): boolean {
+    return this.status === "playing";
   }
 
   dispose(): void {
     this.engine.dispose();
   }
 
-  private load(): void {
-    const currentTrack = this.queue[this.index];
+  private async load(): Promise<void> {
+    const currentTrack = this.tracks[this.index];
     if (!currentTrack) return;
-    this.engine.load(currentTrack.url);
+    const url = await this.musicDataRepo.getMusicDataUrl(
+      currentTrack.musicDataPath,
+    );
+    this.engine.load(url);
   }
 
   // 次に再生する曲のindexを計算して返却するロジック
   // 状態変更は行わない。上位関数である next() で状態変更は実施
   // 詳細は README.md を参照
   private calcNextIndex(): number | undefined {
-    if (this.index < 0 || this.queue.length === 0) return undefined;
+    if (this.index < 0 || this.tracks.length === 0) return undefined;
 
-    const isAtEnd = this.index === this.queue.length - 1;
-    const hasMultiple = this.queue.length > 1;
+    const isAtEnd = this.index === this.tracks.length - 1;
+    const hasMultiple = this.tracks.length > 1;
 
     // repeat one は常に現在の曲を返す
     if (this.repeatMode === "one") return this.index;
@@ -159,7 +182,7 @@ export class SimpleMusicPlayer implements IMusicPlayer {
       excluded.add(this.index);
 
       const candidates: number[] = [];
-      for (let i = 0; i < this.queue.length; i++) {
+      for (let i = 0; i < this.tracks.length; i++) {
         if (!excluded.has(i)) candidates.push(i);
       }
 
@@ -169,7 +192,7 @@ export class SimpleMusicPlayer implements IMusicPlayer {
         if (this.repeatMode === "all") {
           // 履歴をクリアせず計算上は現在の曲以外からランダムに選ぶ
           const freshCandidates: number[] = [];
-          for (let i = 0; i < this.queue.length; i++) {
+          for (let i = 0; i < this.tracks.length; i++) {
             if (i !== this.index) freshCandidates.push(i);
           }
           if (freshCandidates.length === 0) return this.index;
@@ -196,11 +219,11 @@ export class SimpleMusicPlayer implements IMusicPlayer {
   // 状態変更は行わない。上位関数である previous() で状態変更は実施
   // 詳細は README.md を参照
   private calcPreviousIndex(): number | undefined {
-    if (this.index < 0 || this.queue.length === 0) return undefined;
+    if (this.index < 0 || this.tracks.length === 0) return undefined;
 
     const isAtStart = this.index === 0;
     const hasHistory = this.history.length > 0;
-    const hasMultiple = this.queue.length > 1;
+    const hasMultiple = this.tracks.length > 1;
 
     // repeat one は常に現在の曲を返す
     if (this.repeatMode === "one") return this.index;
@@ -214,7 +237,7 @@ export class SimpleMusicPlayer implements IMusicPlayer {
       if (!isAtStart) return this.index - 1;
       return this.repeatMode === "all"
         ? hasMultiple
-          ? this.queue.length - 1
+          ? this.tracks.length - 1
           : 0
         : undefined;
     }
@@ -224,7 +247,7 @@ export class SimpleMusicPlayer implements IMusicPlayer {
     // 先頭の曲でallで複数の曲がある場合は最後の曲を返却
     return this.repeatMode === "all"
       ? hasMultiple
-        ? this.queue.length - 1
+        ? this.tracks.length - 1
         : 0
       : undefined;
   }

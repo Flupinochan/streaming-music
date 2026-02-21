@@ -5,6 +5,7 @@ import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import type { MusicMetadataRepository } from "@/domain/repositories/musicMetadataRepository";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
+import type { TrackId } from "@/domain/value_objects/trackId";
 import { MusicMetadataRepositoryAmplify } from "@/infrastructure/repositories/musicMetadataRepositoryAmplify";
 import { MusicMetadataRepositoryImpl } from "@/infrastructure/repositories/musicMetadataRepositoryImpl";
 import type { MusicMetadataSchema } from "amplify/data/resource";
@@ -15,7 +16,7 @@ import outputs from "../../../amplify_outputs.json";
 
 describe("MusicMetadataRepository integration", () => {
   let repo: MusicMetadataRepository;
-  const createdIds: string[] = [];
+  const createdIds: TrackId[] = [];
 
   beforeAll(async () => {
     // Amplify認証
@@ -63,7 +64,9 @@ describe("MusicMetadataRepository integration", () => {
     createdIds.push(metadata.id);
 
     const items = await repo.listMusicMetadata();
-    const found = items.some((item) => item.id === metadata.id);
+    const found = items.some(
+      (item) => item.id.toString() === metadata.id.toString(),
+    );
     expect(found).toBe(true);
   });
 
@@ -72,11 +75,15 @@ describe("MusicMetadataRepository integration", () => {
 
     await repo.createMusicMetadata(metadata);
     const items = await repo.listMusicMetadata();
-    expect(items.some((item) => item.id === metadata.id)).toBe(true);
+    expect(
+      items.some((item) => item.id.toString() === metadata.id.toString()),
+    ).toBe(true);
 
     await repo.removeMusicMetadata(metadata.id);
     const after = await repo.listMusicMetadata();
-    expect(after.some((item) => item.id === metadata.id)).toBe(false);
+    expect(
+      after.some((item) => item.id.toString() === metadata.id.toString()),
+    ).toBe(false);
   });
 
   // observeMusicMetadata (subscription) のテストは安定しないためE2Eテストで行う

@@ -42,14 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
 import PageShell from "@/presentation/view/components/PageShell.vue";
 import { ref } from "vue";
 
 const musicStore = useMusicStore();
-const musicPlayerStore = useMusicPlayerStore();
 
 const selectedMusicFile = ref<File | null>(null);
 const selectedArtworkFile = ref<File | null>(null);
@@ -79,7 +77,6 @@ const onFileSelected = async (event: Event): Promise<void> => {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
   selectedMusicFile.value = input.files[0];
-  musicPlayerStore.loadFromFile(selectedMusicFile.value);
 
   selectedMusicDurationSeconds.value = null;
   try {
@@ -113,6 +110,7 @@ const handleUpload = async (): Promise<void> => {
 
 const handleDelete = async (): Promise<void> => {
   if (!musicStore.selectedMusic) return;
+  console.log("deleting music", musicStore.selectedMusic.musicS3Path);
   try {
     await musicStore.removeMusic({
       id: musicStore.selectedMusic.id,

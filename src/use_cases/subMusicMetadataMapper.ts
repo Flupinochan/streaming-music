@@ -5,7 +5,7 @@ export const musicMetadataToSubMusicMetadataDto = (
   musicMetadata: MusicMetadata,
 ): SubMusicMetadataDto => {
   return new SubMusicMetadataDto(
-    musicMetadata.id,
+    musicMetadata.id.toString(),
     musicMetadata.title,
     musicMetadata.musicDurationSeconds,
     musicMetadata.musicDataBytes,
