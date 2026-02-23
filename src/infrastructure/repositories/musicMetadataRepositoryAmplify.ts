@@ -38,16 +38,23 @@ export class MusicMetadataRepositoryAmplify {
   }
 
   async listMusicMetadata(): Promise<MusicMetadataDto[]> {
-    const { data, errors } = await this.client.models.MusicMetadata.list();
+    const { data, errors } = await this.client.models.MusicMetadata.list({
+      authMode: "userPool",
+    });
     return data.map((item) => amplifyModelToMusicMetadataDto(item));
   }
 
   async createMusicMetadata(dto: MusicMetadataDto): Promise<void> {
     const createAmplifyModel = musicMetadataDtoToCreateAmplifyModel(dto);
-    await this.client.models.MusicMetadata.create(createAmplifyModel);
+    await this.client.models.MusicMetadata.create(createAmplifyModel, {
+      authMode: "userPool",
+    });
   }
 
   async removeMusicMetadata(id: string): Promise<void> {
-    await this.client.models.MusicMetadata.delete({ id });
+    await this.client.models.MusicMetadata.delete(
+      { id },
+      { authMode: "userPool" },
+    );
   }
 }

@@ -1,6 +1,7 @@
 import { mdiFileImage } from "@mdi/js";
 import type { MusicMetadataSchema } from "amplify/data/resource";
 import { Amplify } from "aws-amplify";
+import { fetchAuthSession } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
@@ -38,6 +39,9 @@ export type AmplifyMusicMetadataItem =
 export type AmplifyMusicMetadataCreateInput = Parameters<
   (typeof client)["models"]["MusicMetadata"]["create"]
 >[0];
+
+// Guestユーザーでのアクセスを許可するため、セッションを強制的にリフレッシュしておく
+await fetchAuthSession({ forceRefresh: true });
 
 const pinia = createPinia();
 
