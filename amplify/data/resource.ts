@@ -11,7 +11,7 @@ const musicMetadataSchema = a.schema({
     })
     .authorization((allow) => [
       allow.guest().to(["read"]),
-      allow.authenticated(),
+      allow.authenticated("identityPool"),
     ]),
 });
 

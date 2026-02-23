@@ -18,6 +18,7 @@ export class MusicMetadataRepositoryAmplify {
     return {
       subscribe: (observer: Observer<MusicMetadataDto[]>): Subscription => {
         // authModeはSchema定義と同じようにidentityPoolを指定
+        // guest userはidentityPool、authenticated userはuserPoolに動的に変えても良い
         const amplifySub = this.client.models.MusicMetadata.observeQuery({
           authMode: "identityPool",
         }).subscribe({
