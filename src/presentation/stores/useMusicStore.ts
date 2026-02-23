@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { SubMusicMetadataUsecase } from "./../../use_cases/subMusicMetadataUsecase";
 import { useMusicPlayerStore } from "./useMusicPlayerStore";
 
-import type { Track } from "../../domain/gateways/MusicPlayer";
+import type { Track } from "../../domain/gateways/musicPlayer";
 import { MusicDataPath } from "../../domain/value_objects/musicDataPath";
 import { TrackId } from "../../domain/value_objects/trackId";
 import type { CreateMusicDto } from "../../use_cases/createMusicDto";

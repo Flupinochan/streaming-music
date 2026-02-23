@@ -1,11 +1,11 @@
-import type { AudioEngine } from "../../domain/gateways/AudioEngine";
+import type { AudioEngine } from "../../domain/gateways/audioEngine";
 import type {
   MusicPlayer,
   PlayerState,
   PlayerStatus,
   RepeatMode,
   Track,
-} from "../../domain/gateways/MusicPlayer";
+} from "../../domain/gateways/musicPlayer";
 import type { MusicDataRepository } from "../../domain/repositories/musicDataRepository";
 import { Seconds } from "../../domain/value_objects/seconds";
 import type { TrackId } from "../../domain/value_objects/trackId";

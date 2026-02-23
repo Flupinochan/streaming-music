@@ -1,14 +1,14 @@
+import { defineStore } from "pinia";
+import { ref } from "vue";
 import type {
   MusicPlayer,
   PlayerState,
   RepeatMode,
   Track,
-} from "../../domain/gateways/MusicPlayer";
+} from "../../domain/gateways/musicPlayer";
 import { Seconds } from "../../domain/value_objects/seconds";
 import { TrackId } from "../../domain/value_objects/trackId";
 import { audioEvent } from "../../infrastructure/gateways/audioEventBus";
-import { defineStore } from "pinia";
-import { ref } from "vue";
 
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   let musicPlayer: MusicPlayer | undefined = undefined;
