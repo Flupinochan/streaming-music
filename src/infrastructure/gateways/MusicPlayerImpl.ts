@@ -1,6 +1,4 @@
-import type { AudioEngine } from "@/domain/gateways/AudioEngine";
-import type { MusicDataRepository } from "@/domain/repositories/musicDataRepository";
-import type { TrackId } from "@/domain/value_objects/trackId";
+import type { AudioEngine } from "../../domain/gateways/AudioEngine";
 import type {
   MusicPlayer,
   PlayerState,
@@ -8,7 +6,9 @@ import type {
   RepeatMode,
   Track,
 } from "../../domain/gateways/MusicPlayer";
-import { Seconds } from "./../../domain/value_objects/seconds";
+import type { MusicDataRepository } from "../../domain/repositories/musicDataRepository";
+import { Seconds } from "../../domain/value_objects/seconds";
+import type { TrackId } from "../../domain/value_objects/trackId";
 
 export class MusicPlayerImpl implements MusicPlayer {
   private status: PlayerStatus = "stopped";

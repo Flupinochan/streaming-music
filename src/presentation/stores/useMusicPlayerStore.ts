@@ -3,10 +3,10 @@ import type {
   PlayerState,
   RepeatMode,
   Track,
-} from "@/domain/gateways/MusicPlayer";
-import { Seconds } from "@/domain/value_objects/seconds";
-import { TrackId } from "@/domain/value_objects/trackId";
-import { audioEvent } from "@/infrastructure/gateways/audioEventBus";
+} from "../../domain/gateways/MusicPlayer";
+import { Seconds } from "../../domain/value_objects/seconds";
+import { TrackId } from "../../domain/value_objects/trackId";
+import { audioEvent } from "../../infrastructure/gateways/audioEventBus";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 

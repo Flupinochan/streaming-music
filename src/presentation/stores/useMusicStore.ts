@@ -1,16 +1,16 @@
-import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { SubMusicMetadataUsecase } from "./../../use_cases/subMusicMetadataUsecase";
+import { useMusicPlayerStore } from "./useMusicPlayerStore";
 
-import type { Track } from "@/domain/gateways/MusicPlayer";
-import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
-import { TrackId } from "@/domain/value_objects/trackId";
-import type { CreateMusicDto } from "@/use_cases/createMusicDto";
-import type { CreateMusicUsecase } from "@/use_cases/createMusicUsecase";
-import type { RemoveMusicDto } from "@/use_cases/removeMusicDto";
-import type { RemoveMusicUsecase } from "@/use_cases/removeMusicUsecase";
-import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
+import type { Track } from "../../domain/gateways/MusicPlayer";
+import { MusicDataPath } from "../../domain/value_objects/musicDataPath";
+import { TrackId } from "../../domain/value_objects/trackId";
+import type { CreateMusicDto } from "../../use_cases/createMusicDto";
+import type { CreateMusicUsecase } from "../../use_cases/createMusicUsecase";
+import type { RemoveMusicDto } from "../../use_cases/removeMusicDto";
+import type { RemoveMusicUsecase } from "../../use_cases/removeMusicUsecase";
+import type { SubMusicMetadataDto } from "../../use_cases/subMusicMetadataDto";
 
 export const useMusicStore = defineStore("music", () => {
   let createMusicUsecase: CreateMusicUsecase | undefined = undefined;

@@ -20,9 +20,9 @@ export default defineConfigWithVueTs([
   ...pluginVue.configs["flat/essential"],
   vueTsConfigs.recommended,
 
-  skipFormatting,
-
   ...pluginOxlint.configs["flat/recommended"],
+
+  skipFormatting,
 
   // 関数の戻り値の型定義を必須化
   {
