@@ -20,6 +20,6 @@ export type MusicMetadataSchema = ClientSchema<typeof musicMetadataSchema>;
 export const data = defineData({
   schema: musicMetadataSchema,
   authorizationModes: {
-    defaultAuthorizationMode: "userPool",
+    defaultAuthorizationMode: "identityPool",
   },
 });

@@ -17,9 +17,9 @@ export class MusicMetadataRepositoryAmplify {
   observeMusicMetadata(): Observable<MusicMetadataDto[]> {
     return {
       subscribe: (observer: Observer<MusicMetadataDto[]>): Subscription => {
-        // authModeはSchema定義と同じようにuserPoolを指定
+        // authModeはSchema定義と同じようにidentityPoolを指定
         const amplifySub = this.client.models.MusicMetadata.observeQuery({
-          authMode: "userPool",
+          authMode: "identityPool",
         }).subscribe({
           next: ({ items }) => {
             const dtos = items.map((item) =>
@@ -39,7 +39,7 @@ export class MusicMetadataRepositoryAmplify {
 
   async listMusicMetadata(): Promise<MusicMetadataDto[]> {
     const { data, errors } = await this.client.models.MusicMetadata.list({
-      authMode: "userPool",
+      authMode: "identityPool",
     });
     return data.map((item) => amplifyModelToMusicMetadataDto(item));
   }
@@ -47,14 +47,14 @@ export class MusicMetadataRepositoryAmplify {
   async createMusicMetadata(dto: MusicMetadataDto): Promise<void> {
     const createAmplifyModel = musicMetadataDtoToCreateAmplifyModel(dto);
     await this.client.models.MusicMetadata.create(createAmplifyModel, {
-      authMode: "userPool",
+      authMode: "identityPool",
     });
   }
 
   async removeMusicMetadata(id: string): Promise<void> {
     await this.client.models.MusicMetadata.delete(
       { id },
-      { authMode: "userPool" },
+      { authMode: "identityPool" },
     );
   }
 }
