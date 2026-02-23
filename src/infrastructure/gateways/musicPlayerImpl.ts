@@ -1,4 +1,4 @@
-import type { AudioEngine } from "../../domain/gateways/audioEngine";
+import type { AudioEngine } from "../../domain/gateways/audioEngine2";
 import type {
   MusicPlayer,
   PlayerState,
