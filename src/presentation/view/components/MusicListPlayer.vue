@@ -1,12 +1,12 @@
 <template>
   <v-list
-    v-if="musicStore.selectedMusic"
+    v-if="musicPlayerStore.tracks.length > 0"
     selectable
     select-strategy="single-independent"
     :disabled="musicStore.loading"
   >
     <v-list-item
-      v-for="music in musicStore.musicList"
+      v-for="music in musicPlayerStore.tracks"
       :key="music.musicS3Path"
       :value="music"
       @click="handleSelectMusic(music)"
@@ -22,22 +22,22 @@
     </v-list-item>
   </v-list>
 
-  <div v-if="musicStore.selectedMusic">
+  <div v-if="musicPlayerStore.tracks.length > 0">
     <div class="mb-2">
       <v-slider
         v-model="sliderSeconds"
         :min="0"
-        :max="Math.max(0, musicPlayerStore.playerState.durationSeconds.value)"
+        :max="Math.max(0, musicPlayerStore.playerState.musicDurationSeconds)"
         :step="1"
         hide-details
       />
       <div class="text-caption">
-        {{ musicPlayerStore.playerState.durationSeconds.getLabel() }}
+        {{ musicPlayerStore.playerState.musicDurationSeconds }}
       </div>
     </div>
 
     <v-btn
-      :disabled="musicPlayerStore.isPlaying()"
+      :disabled="!musicPlayerStore.canPlaying()"
       @click="musicPlayerStore.play"
     >
       再生
@@ -48,7 +48,12 @@
     >
       一時停止
     </v-btn>
-    <v-btn @click="musicPlayerStore.stop"> 停止 </v-btn>
+    <v-btn
+      :disabled="!musicPlayerStore.isPlaying()"
+      @click="musicPlayerStore.stop"
+    >
+      停止
+    </v-btn>
     <v-btn
       :color="
         musicPlayerStore.playerState.repeatMode !== 'none'
@@ -92,13 +97,14 @@
 import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
-import { computed, onMounted, onUnmounted, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
+const selected = ref<SubMusicMetadataDto | undefined>(undefined);
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 
 const sliderSeconds = computed<number>({
-  get: () => musicPlayerStore.playerState.positionSeconds.value,
+  get: () => musicPlayerStore.playerState.positionSeconds,
   set: (v) => {
     musicPlayerStore.seek(v);
   },
@@ -111,8 +117,14 @@ const toggleRepeat = (): void => {
 };
 
 const handleSelectMusic = async (music: SubMusicMetadataDto): Promise<void> => {
-  musicStore.selectedMusic = music;
-  await musicPlayerStore.selectTrack(music.id);
+  if (selected.value?.id === music.id) {
+    selected.value = undefined;
+    await musicPlayerStore.selectTrack(undefined);
+    return;
+  }
+
+  selected.value = music;
+  await musicPlayerStore.selectTrack(music);
 };
 
 onMounted(async () => {
@@ -122,16 +134,6 @@ onMounted(async () => {
 onUnmounted(() => {
   musicStore.stopMusicListSubscription();
 });
-
-watch(
-  () => [musicStore.selectedMusic, musicStore.musicList] as const,
-  async ([selectedMusic, list]) => {
-    if (selectedMusic) return;
-    if (list.length === 0) return;
-    await handleSelectMusic(list[0]);
-  },
-  { immediate: true },
-);
 </script>
 
 <style scoped></style>

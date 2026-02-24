@@ -1,18 +1,19 @@
-import type { MusicMetadata } from "@/domain/entities/musicMetadata";
+import { FetchMusicDto } from "@/use_cases/fetchMusicDto";
+import type { FetchMusicUsecase } from "@/use_cases/fetchMusicUsecase";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import { Howl } from "howler";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { MusicDataRepository } from "../../domain/repositories/musicDataRepository";
-import { Seconds } from "../../domain/value_objects/seconds";
-import { TrackId } from "../../domain/value_objects/trackId";
 
 export type PlayerStatus = "stopped" | "playing" | "paused";
 export type RepeatMode = "none" | "one" | "all";
-export type Track = Pick<MusicMetadata, "id" | "musicDataPath">;
 export interface PlayerState {
-  currentTrackId: TrackId | undefined;
-  positionSeconds: Seconds;
-  durationSeconds: Seconds;
+  id: string | undefined;
+  title: string | undefined;
+  musicS3Path: string | undefined;
+  artworkS3Path: string | undefined;
+  positionSeconds: number;
+  musicDurationSeconds: number;
   status: PlayerStatus;
   repeatMode: RepeatMode;
   shuffleEnabled: boolean;
@@ -23,34 +24,43 @@ export interface PlayerState {
  */
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // 公開データ ----------------------------------------------------------
-  // TrackIdで識別
+  // 選択中の曲、状態 (分離すべきかもしれない)
   const playerState = ref<PlayerState>({
-    currentTrackId: undefined,
-    positionSeconds: Seconds.createFromSeconds(0),
-    durationSeconds: Seconds.createFromSeconds(0),
+    id: undefined,
+    title: undefined,
+    musicS3Path: undefined,
+    artworkS3Path: undefined,
+    positionSeconds: 0,
+    musicDurationSeconds: 0,
     status: "stopped",
     repeatMode: "none",
     shuffleEnabled: false,
   });
+  // 曲のリスト
+  const tracks = ref<SubMusicMetadataDto[]>([]);
 
   // 内部データ --------------------------------------------------------------
-  // 曲のリスト
-  let tracks: Track[] = [];
   // queue配列の中で現在再生している曲のindex (-1の場合は再生する曲がない状態)
   let index = -1;
   // queue配列の中で再生した曲のindexの履歴 (シャッフル再生時に利用)
   let history: number[] = [];
   let currentUrl: URL | undefined;
   let howl: Howl | undefined;
-  let musicDataRepo: MusicDataRepository | undefined;
+  let fetchMusicUsecase: FetchMusicUsecase | undefined;
   // seek用タイマーID
   let tickId: number | undefined;
 
   // DI
-  const setMusicDataRepository = (repo: MusicDataRepository): void => {
-    musicDataRepo = repo;
+  const setFetchMusicUsecase = (usecase: FetchMusicUsecase): void => {
+    fetchMusicUsecase = usecase;
   };
 
+  const canPlaying = (): boolean => {
+    return (
+      playerState.value.status !== "playing" &&
+      playerState.value.id !== undefined
+    );
+  };
   const isPlaying = (): boolean => playerState.value.status === "playing";
 
   const disposeEngine = (): void => {
@@ -69,8 +79,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     if (!howl) return;
     playerState.value = {
       ...playerState.value,
-      positionSeconds: Seconds.createFromSeconds(howl.seek() as number),
-      durationSeconds: Seconds.createFromSeconds(howl.duration() ?? 0),
+      positionSeconds: howl.seek() as number,
+      musicDurationSeconds: howl.duration() ?? 0,
     };
   };
 
@@ -92,9 +102,11 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   };
 
   // トラック管理 ----------------------------------------------------------
-  const loadTrack = async (track: Track): Promise<void> => {
-    if (!musicDataRepo) return;
-    const url = await musicDataRepo.getMusicDataUrl(track.musicDataPath);
+  const loadTrack = async (track: SubMusicMetadataDto): Promise<void> => {
+    if (!fetchMusicUsecase) return;
+    const url = await fetchMusicUsecase.fetchMusic(
+      new FetchMusicDto(track.musicS3Path),
+    );
     if (howl && currentUrl === url) return;
     disposeEngine();
     currentUrl = url;
@@ -122,30 +134,47 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     });
   };
 
-  const setTracks = (newTracks: Track[], startAt = 0): void => {
-    tracks = newTracks;
+  const setTracks = (newTracks: SubMusicMetadataDto[], startAt = 0): void => {
+    tracks.value = newTracks;
     index =
-      tracks.length === 0
+      tracks.value.length === 0
         ? -1
-        : Math.max(0, Math.min(startAt, tracks.length - 1));
+        : Math.max(0, Math.min(startAt, tracks.value.length - 1));
     history = [];
     playerState.value = { ...playerState.value, status: "stopped" };
   };
 
-  const selectTrack = async (trackId: string): Promise<void> => {
-    const idx = tracks.findIndex((t) => t.id.toString() === trackId);
-    index = idx;
-    if (tracks[index]) {
-      await loadTrack(tracks[index]);
+  const selectTrack = async (
+    track: SubMusicMetadataDto | undefined,
+  ): Promise<void> => {
+    if (!track) {
+      playerState.value = {
+        ...playerState.value,
+        id: undefined,
+        title: undefined,
+        musicS3Path: undefined,
+        artworkS3Path: undefined,
+        positionSeconds: 0,
+        musicDurationSeconds: 0,
+        status: "stopped",
+      };
+      disposeEngine();
+      return;
     }
-    if (playerState.value.status === "playing") {
+
+    const idx = tracks.value.findIndex((t) => t.id === track.id);
+    index = idx;
+    if (tracks.value[index]) {
+      await loadTrack(tracks.value[index]);
+    }
+    if (isPlaying()) {
       howl?.play();
     }
     history = [];
     playerState.value = {
       ...playerState.value,
-      currentTrackId: TrackId.create(trackId),
-      positionSeconds: Seconds.createFromSeconds(0),
+      ...track,
+      positionSeconds: 0,
     };
   };
 
@@ -186,7 +215,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     }
   };
 
-  const next = async (): Promise<Track | undefined> => {
+  const next = async (): Promise<SubMusicMetadataDto | undefined> => {
     const nextIdx = calcNextIndex();
     if (nextIdx === undefined) return undefined;
     index = nextIdx;
@@ -199,24 +228,24 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     // 一周分再生済みなら履歴をクリア
     if (
       playerState.value.shuffleEnabled &&
-      tracks.length > 1 &&
-      history.length >= tracks.length - 1
+      tracks.value.length > 1 &&
+      history.length >= tracks.value.length - 1
     ) {
       history = [];
     }
 
-    if (tracks[index]) {
-      await loadTrack(tracks[index]);
+    if (tracks.value[index]) {
+      await loadTrack(tracks.value[index]);
     }
 
     if (playerState.value.status === "playing") {
       howl?.play();
     }
 
-    return tracks[index];
+    return tracks.value[index];
   };
 
-  const previous = async (): Promise<Track | undefined> => {
+  const previous = async (): Promise<SubMusicMetadataDto | undefined> => {
     const prevIdx = calcPreviousIndex();
     if (prevIdx === undefined) return undefined;
     index = prevIdx;
@@ -225,15 +254,15 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     const histIdx = history.lastIndexOf(prevIdx);
     if (histIdx >= 0) history.splice(histIdx, 1);
 
-    if (tracks[index]) {
-      await loadTrack(tracks[index]);
+    if (tracks.value[index]) {
+      await loadTrack(tracks.value[index]);
     }
 
     if (playerState.value.status === "playing") {
       howl?.play();
     }
 
-    return tracks[index];
+    return tracks.value[index];
   };
 
   // next/previous 計算ロジック --------------------------------------------
@@ -242,9 +271,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // 状態変更は行わない。上位関数である next() で状態変更は実施
   // 詳細は README.md を参照
   const calcNextIndex = (): number | undefined => {
-    if (index < 0 || tracks.length === 0) return undefined;
-    const isAtEnd = index === tracks.length - 1;
-    const hasMultiple = tracks.length > 1;
+    if (index < 0 || tracks.value.length === 0) return undefined;
+    const isAtEnd = index === tracks.value.length - 1;
+    const hasMultiple = tracks.value.length > 1;
 
     // repeat one は常に現在の曲を返す
     if (playerState.value.repeatMode === "one") return index;
@@ -260,7 +289,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
       excluded.add(index);
 
       const candidates: number[] = [];
-      for (let i = 0; i < tracks.length; i++) {
+      for (let i = 0; i < tracks.value.length; i++) {
         if (!excluded.has(i)) candidates.push(i);
       }
 
@@ -270,7 +299,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
         if (playerState.value.repeatMode === "all") {
           // 履歴をクリアせず計算上は現在の曲以外からランダムに選ぶ
           const fresh: number[] = [];
-          for (let i = 0; i < tracks.length; i++) {
+          for (let i = 0; i < tracks.value.length; i++) {
             if (i !== index) fresh.push(i);
           }
           if (fresh.length === 0) return index;
@@ -295,10 +324,10 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // 状態変更は行わない。上位関数である previous() で状態変更は実施
   // 詳細は README.md を参照
   const calcPreviousIndex = (): number | undefined => {
-    if (index < 0 || tracks.length === 0) return undefined;
+    if (index < 0 || tracks.value.length === 0) return undefined;
     const isAtStart = index === 0;
     const hasHistory = history.length > 0;
-    const hasMultiple = tracks.length > 1;
+    const hasMultiple = tracks.value.length > 1;
 
     // repeat one は常に現在の曲を返す
     if (playerState.value.repeatMode === "one") return index;
@@ -311,7 +340,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
       if (!isAtStart) return index - 1;
       return playerState.value.repeatMode === "all"
         ? hasMultiple
-          ? tracks.length - 1
+          ? tracks.value.length - 1
           : 0
         : undefined;
     }
@@ -321,14 +350,15 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     // 先頭の曲でallで複数の曲がある場合は最後の曲を返却
     return playerState.value.repeatMode === "all"
       ? hasMultiple
-        ? tracks.length - 1
+        ? tracks.value.length - 1
         : 0
       : undefined;
   };
 
   return {
     playerState,
-    setMusicDataRepository,
+    tracks,
+    setFetchMusicUsecase,
     setTracks,
     selectTrack,
     play,
@@ -338,6 +368,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     setRepeatMode,
     toggleShuffle,
     isPlaying,
+    canPlaying,
     next,
     previous,
   };

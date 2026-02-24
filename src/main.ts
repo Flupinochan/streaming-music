@@ -20,6 +20,7 @@ import { useMusicPlayerStore } from "./presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "./presentation/stores/useMusicStore";
 import { router } from "./router";
 import { CreateMusicUsecase } from "./use_cases/createMusicUsecase";
+import { FetchMusicUsecase } from "./use_cases/fetchMusicUsecase";
 import { RemoveMusicUsecase } from "./use_cases/removeMusicUsecase";
 import { SubMusicMetadataUsecase } from "./use_cases/subMusicMetadataUsecase";
 
@@ -87,9 +88,10 @@ const removeMusicUsecase = new RemoveMusicUsecase(
 const subMusicMetadataUsecase = new SubMusicMetadataUsecase(
   musicMetadataRepository,
 );
+const fetchMusicUsecase = new FetchMusicUsecase(musicRepository);
 useMusicStore(pinia).setCreateMusicUsecase(createMusicUsecase);
 useMusicStore(pinia).setRemoveMusicUsecase(removeMusicUsecase);
 useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
-useMusicPlayerStore(pinia).setMusicDataRepository(musicRepository);
+useMusicPlayerStore(pinia).setFetchMusicUsecase(fetchMusicUsecase);
 
 app.mount("#app");
