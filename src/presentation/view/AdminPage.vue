@@ -32,7 +32,7 @@
       アップロード
     </v-btn>
     <v-btn
-      :disabled="!musicStore.selectedMusic || musicStore.loading"
+      :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
       :loading="musicStore.loading"
       @click="handleDelete"
     >
@@ -46,8 +46,10 @@ import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
 import PageShell from "@/presentation/view/components/PageShell.vue";
 import { ref } from "vue";
+import { useMusicPlayerStore } from "../stores/useMusicPlayerStore";
 
 const musicStore = useMusicStore();
+const musicPlayerStore = useMusicPlayerStore();
 
 const selectedMusicFile = ref<File | null>(null);
 const selectedArtworkFile = ref<File | null>(null);
@@ -109,17 +111,18 @@ const handleUpload = async (): Promise<void> => {
 };
 
 const handleDelete = async (): Promise<void> => {
-  if (!musicStore.selectedMusic) return;
-  console.log("deleting music", musicStore.selectedMusic.musicS3Path);
-  try {
-    await musicStore.removeMusic({
-      id: musicStore.selectedMusic.id,
-      musicDataPath: musicStore.selectedMusic.musicS3Path,
-      artworkImagePath: musicStore.selectedMusic.artworkS3Path,
-    });
-  } catch (error) {
-    console.error("delete error", error);
-  }
+  if (
+    !musicPlayerStore.playerState.id ||
+    !musicPlayerStore.playerState.musicS3Path ||
+    !musicPlayerStore.playerState.artworkS3Path
+  )
+    return;
+
+  await musicStore.removeMusic({
+    id: musicPlayerStore.playerState.id,
+    musicDataPath: musicPlayerStore.playerState.musicS3Path,
+    artworkImagePath: musicPlayerStore.playerState.artworkS3Path,
+  });
 };
 </script>
 
