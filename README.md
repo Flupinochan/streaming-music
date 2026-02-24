@@ -96,32 +96,3 @@ src/
 | none           | history[history.length - 1] | index - 1                      | undefined (再生しない)            |
 | one            | index                       | index                          | index                             |
 | all            | history[history.length - 1] | index - 1                      | queue.length - 1 (最後の曲に戻る) |
-
-## AudioEngine/MusicPlayer 2層構造
-
-2層構造に見えるが、audioEngine <- musicPlayer <- front となっており、3層構造に近い状態
-audioEngineが純粋に再生機能を提供し、musicPlayerに再生モード等のロジックを定義
-
-```mermaid
-graph
-  subgraph Domain
-    musicPlayer
-    audioEngine
-  end
-
-  subgraph Gateways
-    musicPlayerImpl
-    howlerAudioEngine
-  end
-
-  subgraph Presentation
-    front
-  end
-
-  howlerAudioEngine --> audioEngine
-  musicPlayerImpl --> musicPlayer
-  musicPlayerImpl --> audioEngine
-  musicPlayer --> audioEngine
-  front --> musicPlayer
-```
-
