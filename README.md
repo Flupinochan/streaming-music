@@ -96,3 +96,17 @@ src/
 | none           | history[history.length - 1] | index - 1                      | undefined (再生しない)            |
 | one            | index                       | index                          | index                             |
 | all            | history[history.length - 1] | index - 1                      | queue.length - 1 (最後の曲に戻る) |
+
+## 抽象化について
+
+### howler
+
+抽象化はしない
+理由としては、`外部サービスではなく`、あくまでも標準のJavaScriptのWeb Audio APIを扱いやすくしたライブラリだからである
+抽象化したいのであれば、最初からhowlerを使用せず、`Web Audio APIを直接利用すべき` である
+今回は、Web Audio APIの難易度が高いため、howlerを使う方針とする
+
+### Amplify S3/DynamoDB
+
+抽象化する
+外部サービスだから
