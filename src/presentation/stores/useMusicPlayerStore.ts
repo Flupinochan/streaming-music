@@ -19,9 +19,7 @@ export interface PlayerState {
 }
 
 /**
- * Howler に依存したシンプルな音楽プレイヤーストア。
- * 既存の MusicPlayer/MusicPlayerImpl で行っていた再生/ナビゲーション
- * ロジックをそのまま取り込み、Pinia のリアクティブを使って状態を保持する。
+ * Howler に依存した音楽プレイヤー
  */
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // 公開データ ----------------------------------------------------------
