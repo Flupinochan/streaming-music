@@ -12,8 +12,6 @@ import "vuetify/styles";
 import colors from "vuetify/util/colors";
 import outputs from "../amplify_outputs.json";
 import App from "./App.vue";
-import { HowlerAudioEngine } from "./infrastructure/gateways/howlerAudioEngine";
-import { MusicPlayerImpl } from "./infrastructure/gateways/musicPlayerImpl";
 import { MusicDataRepositoryAmplify } from "./infrastructure/repositories/musicDataRepositoryAmplify";
 import { MusicDataRepositoryImpl } from "./infrastructure/repositories/musicDataRepositoryImpl";
 import { MusicMetadataRepositoryAmplify } from "./infrastructure/repositories/musicMetadataRepositoryAmplify";
@@ -89,13 +87,9 @@ const removeMusicUsecase = new RemoveMusicUsecase(
 const subMusicMetadataUsecase = new SubMusicMetadataUsecase(
   musicMetadataRepository,
 );
-const musicPlayer = new MusicPlayerImpl(
-  new HowlerAudioEngine(),
-  musicRepository,
-);
 useMusicStore(pinia).setCreateMusicUsecase(createMusicUsecase);
 useMusicStore(pinia).setRemoveMusicUsecase(removeMusicUsecase);
 useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
-useMusicPlayerStore(pinia).setMusicPlayer(musicPlayer);
+useMusicPlayerStore(pinia).setMusicDataRepository(musicRepository);
 
 app.mount("#app");

@@ -1,116 +1,149 @@
+import type { MusicMetadata } from "@/domain/entities/musicMetadata";
+import { Howl } from "howler";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type {
-  MusicPlayer,
-  PlayerState,
-  RepeatMode,
-  Track,
-} from "../../domain/gateways/musicPlayer";
+import type { MusicDataRepository } from "../../domain/repositories/musicDataRepository";
 import { Seconds } from "../../domain/value_objects/seconds";
 import { TrackId } from "../../domain/value_objects/trackId";
-import { audioEvent } from "../../infrastructure/gateways/audioEventBus";
 
+export type PlayerStatus = "stopped" | "playing" | "paused";
+export type RepeatMode = "none" | "one" | "all";
+export type Track = Pick<MusicMetadata, "id" | "musicDataPath">;
+export interface PlayerState {
+  currentTrackId: TrackId | undefined;
+  positionSeconds: Seconds;
+  durationSeconds: Seconds;
+  status: PlayerStatus;
+  repeatMode: RepeatMode;
+  shuffleEnabled: boolean;
+}
+
+/**
+ * Howler に依存したシンプルな音楽プレイヤーストア。
+ * 既存の MusicPlayer/MusicPlayerImpl で行っていた再生/ナビゲーション
+ * ロジックをそのまま取り込み、Pinia のリアクティブを使って状態を保持する。
+ */
 export const useMusicPlayerStore = defineStore("musicPlayer", () => {
-  let musicPlayer: MusicPlayer | undefined = undefined;
+  // 公開データ ----------------------------------------------------------
+  // TrackIdで識別
   const playerState = ref<PlayerState>({
-    status: "stopped",
     currentTrackId: undefined,
     positionSeconds: Seconds.createFromSeconds(0),
     durationSeconds: Seconds.createFromSeconds(0),
+    status: "stopped",
     repeatMode: "none",
     shuffleEnabled: false,
   });
 
-  const getMusicPlayer = (): MusicPlayer => {
-    if (!musicPlayer) {
-      throw new Error(
-        "MusicPlayer is not set. Call useMusicPlayerStore(pinia).setMusicPlayerFactory() in main.ts.",
-      );
-    }
-    return musicPlayer;
+  // 内部データ --------------------------------------------------------------
+  // 曲のリスト
+  let tracks: Track[] = [];
+  // queue配列の中で現在再生している曲のindex (-1の場合は再生する曲がない状態)
+  let index = -1;
+  // queue配列の中で再生した曲のindexの履歴 (シャッフル再生時に利用)
+  let history: number[] = [];
+  let currentUrl: URL | undefined;
+  let howl: Howl | undefined;
+  let musicDataRepo: MusicDataRepository | undefined;
+  // seek用タイマーID
+  let tickId: number | undefined;
+
+  // DI
+  const setMusicDataRepository = (repo: MusicDataRepository): void => {
+    musicDataRepo = repo;
   };
 
-  const setMusicPlayer = (value: MusicPlayer): void => {
-    musicPlayer = value;
+  const isPlaying = (): boolean => playerState.value.status === "playing";
+
+  const disposeEngine = (): void => {
+    if (!howl) return;
+    howl.off("end");
+    clearTick();
+    howl.stop();
+    howl.unload();
+    howl = undefined;
+    currentUrl = undefined;
   };
-  audioEvent.on("play", () => {
-    playerState.value = { ...playerState.value, status: "playing" };
-  });
-  audioEvent.on("pause", () => {
-    playerState.value = { ...playerState.value, status: "paused" };
-  });
-  audioEvent.on("stop", () => {
-    playerState.value = { ...playerState.value, status: "stopped" };
-  });
-  audioEvent.on("end", () => {
-    playerState.value = { ...playerState.value, status: "stopped" };
-  });
-  audioEvent.on("loaded", ({ duration }) => {
+
+  // 再生位置の更新ロジック --------------------------------------------------------------
+  // seekとは再生位置のこと
+  const getSeek = (): void => {
+    if (!howl) return;
     playerState.value = {
       ...playerState.value,
-      durationSeconds: Seconds.createFromSeconds(duration),
+      positionSeconds: Seconds.createFromSeconds(howl.seek() as number),
+      durationSeconds: Seconds.createFromSeconds(howl.duration() ?? 0),
     };
-  });
-  audioEvent.on("position", ({ position, duration }) => {
-    playerState.value = {
-      ...playerState.value,
-      positionSeconds: Seconds.createFromSeconds(position),
-      durationSeconds: Seconds.createFromSeconds(duration),
-    };
-  });
-
-  const getPlayerState = (): PlayerState => {
-    return playerState.value as PlayerState;
   };
 
-  const isPlaying = (): boolean => {
-    return playerState.value.status === "playing";
+  const setSeek = (seconds: number): void => {
+    howl?.seek(Math.max(0, seconds));
+    getSeek();
   };
 
-  const play = (): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.play();
-    playerState.value = { ...playerState.value, status: "playing" };
+  // howlerから定期的に再生位置(seek)を取得するタイマー
+  const startTick = (): void => {
+    if (tickId !== undefined) return;
+    tickId = window.setInterval(getSeek, 500);
   };
 
-  const pause = (): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.pause();
-    playerState.value = { ...playerState.value, status: "paused" };
+  const clearTick = (): void => {
+    if (tickId === undefined) return;
+    clearInterval(tickId);
+    tickId = undefined;
   };
 
-  const stop = (): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.stop();
+  // トラック管理 ----------------------------------------------------------
+  const loadTrack = async (track: Track): Promise<void> => {
+    if (!musicDataRepo) return;
+    const url = await musicDataRepo.getMusicDataUrl(track.musicDataPath);
+    if (howl && currentUrl === url) return;
+    disposeEngine();
+    currentUrl = url;
+    howl = new Howl({
+      src: [url.toString()],
+      html5: true,
+      pool: 1,
+      // イベント定義
+      // 曲が終了したときの挙動
+      onend: async (): Promise<void> => {
+        if (playerState.value.repeatMode === "one") {
+          play();
+          return;
+        }
+
+        const isNext = await next();
+        if (!isNext) {
+          // 次の曲がない場合は停止状態にする
+          playerState.value = {
+            ...playerState.value,
+            status: "stopped",
+          };
+        }
+      },
+    });
+  };
+
+  const setTracks = (newTracks: Track[], startAt = 0): void => {
+    tracks = newTracks;
+    index =
+      tracks.length === 0
+        ? -1
+        : Math.max(0, Math.min(startAt, tracks.length - 1));
+    history = [];
     playerState.value = { ...playerState.value, status: "stopped" };
-  };
-
-  const setRepeadMode = (repeadMode: RepeatMode): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.setRepeatMode(repeadMode);
-    playerState.value = { ...playerState.value, repeatMode: repeadMode };
-  };
-
-  const toggleShuffle = (): void => {
-    const musicPlayer = getMusicPlayer();
-    const current = playerState.value.shuffleEnabled;
-    musicPlayer.setShuffle(!current);
-    playerState.value = { ...playerState.value, shuffleEnabled: !current };
-  };
-
-  const seek = (seconds: number): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.seek(Seconds.createFromSeconds(seconds));
-  };
-
-  const setTracks = (tracks: Track[]): void => {
-    const musicPlayer = getMusicPlayer();
-    musicPlayer.setTracks(tracks);
   };
 
   const selectTrack = async (trackId: string): Promise<void> => {
-    const musicPlayer = getMusicPlayer();
-    await musicPlayer.selectTrack(TrackId.create(trackId));
+    const idx = tracks.findIndex((t) => t.id.toString() === trackId);
+    index = idx;
+    if (tracks[index]) {
+      await loadTrack(tracks[index]);
+    }
+    if (playerState.value.status === "playing") {
+      howl?.play();
+    }
+    history = [];
     playerState.value = {
       ...playerState.value,
       currentTrackId: TrackId.create(trackId),
@@ -118,19 +151,196 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     };
   };
 
+  // 再生操作 --------------------------------------------------------------
+  const play = (): void => {
+    if (index < 0) return;
+    playerState.value = { ...playerState.value, status: "playing" };
+    howl?.play();
+    startTick();
+  };
+
+  const pause = (): void => {
+    playerState.value = { ...playerState.value, status: "paused" };
+    howl?.pause();
+    clearTick();
+  };
+
+  const stop = (): void => {
+    playerState.value = { ...playerState.value, status: "stopped" };
+    howl?.stop();
+    clearTick();
+    setSeek(0);
+  };
+
+  const setRepeatMode = (mode: RepeatMode): void => {
+    playerState.value = { ...playerState.value, repeatMode: mode };
+  };
+
+  const toggleShuffle = (): void => {
+    const currentShuffleEnabled = playerState.value.shuffleEnabled;
+    playerState.value = {
+      ...playerState.value,
+      shuffleEnabled: !currentShuffleEnabled,
+    };
+
+    if (!currentShuffleEnabled) {
+      history = [];
+    }
+  };
+
+  const next = async (): Promise<Track | undefined> => {
+    const nextIdx = calcNextIndex();
+    if (nextIdx === undefined) return undefined;
+    index = nextIdx;
+
+    // historyを更新 (重複は避ける)
+    if (!history.includes(index)) {
+      history.push(index);
+    }
+
+    // 一周分再生済みなら履歴をクリア
+    if (
+      playerState.value.shuffleEnabled &&
+      tracks.length > 1 &&
+      history.length >= tracks.length - 1
+    ) {
+      history = [];
+    }
+
+    if (tracks[index]) {
+      await loadTrack(tracks[index]);
+    }
+
+    if (playerState.value.status === "playing") {
+      howl?.play();
+    }
+
+    return tracks[index];
+  };
+
+  const previous = async (): Promise<Track | undefined> => {
+    const prevIdx = calcPreviousIndex();
+    if (prevIdx === undefined) return undefined;
+    index = prevIdx;
+
+    // historyを更新
+    const histIdx = history.lastIndexOf(prevIdx);
+    if (histIdx >= 0) history.splice(histIdx, 1);
+
+    if (tracks[index]) {
+      await loadTrack(tracks[index]);
+    }
+
+    if (playerState.value.status === "playing") {
+      howl?.play();
+    }
+
+    return tracks[index];
+  };
+
+  // next/previous 計算ロジック --------------------------------------------
+
+  // 次に再生する曲のindexを計算して返却するロジック
+  // 状態変更は行わない。上位関数である next() で状態変更は実施
+  // 詳細は README.md を参照
+  const calcNextIndex = (): number | undefined => {
+    if (index < 0 || tracks.length === 0) return undefined;
+    const isAtEnd = index === tracks.length - 1;
+    const hasMultiple = tracks.length > 1;
+
+    // repeat one は常に現在の曲を返す
+    if (playerState.value.repeatMode === "one") return index;
+
+    // シャッフル有効時
+    if (playerState.value.shuffleEnabled) {
+      // 曲が1つしかない場合
+      if (!hasMultiple)
+        return playerState.value.repeatMode === "all" ? index : undefined;
+
+      // 複数曲ある場合: history と現在の曲を除いた候補からランダムに選ぶ
+      const excluded = new Set<number>(history);
+      excluded.add(index);
+
+      const candidates: number[] = [];
+      for (let i = 0; i < tracks.length; i++) {
+        if (!excluded.has(i)) candidates.push(i);
+      }
+
+      // 履歴が他の全曲を含んでいる場合 (最後の曲まで再生した場合)
+      if (candidates.length === 0) {
+        // repeatMode に応じて挙動を決定
+        if (playerState.value.repeatMode === "all") {
+          // 履歴をクリアせず計算上は現在の曲以外からランダムに選ぶ
+          const fresh: number[] = [];
+          for (let i = 0; i < tracks.length; i++) {
+            if (i !== index) fresh.push(i);
+          }
+          if (fresh.length === 0) return index;
+          return fresh[Math.floor(Math.random() * fresh.length)];
+        }
+
+        // repeatMode が none の場合は再生を停止
+        return undefined;
+      }
+
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    // シャッフル無効時で最終曲でない場合はシンプルに次のインデックスを返却
+    if (!isAtEnd) return index + 1;
+
+    // 最終曲でallの場合は先頭の曲を返却
+    return playerState.value.repeatMode === "all" ? 0 : undefined;
+  };
+
+  // 前に再生した曲のindexを計算して返却するロジック
+  // 状態変更は行わない。上位関数である previous() で状態変更は実施
+  // 詳細は README.md を参照
+  const calcPreviousIndex = (): number | undefined => {
+    if (index < 0 || tracks.length === 0) return undefined;
+    const isAtStart = index === 0;
+    const hasHistory = history.length > 0;
+    const hasMultiple = tracks.length > 1;
+
+    // repeat one は常に現在の曲を返す
+    if (playerState.value.repeatMode === "one") return index;
+
+    // シャッフル有効時
+    if (playerState.value.shuffleEnabled) {
+      // historyがある場合
+      if (hasHistory) return history[history.length - 1];
+      // historyがなければシャッフル無効時と同様のロジック
+      if (!isAtStart) return index - 1;
+      return playerState.value.repeatMode === "all"
+        ? hasMultiple
+          ? tracks.length - 1
+          : 0
+        : undefined;
+    }
+
+    // シャッフル無効時: 先頭の曲でない場合はシンプルに前のインデックスを返却
+    if (!isAtStart) return index - 1;
+    // 先頭の曲でallで複数の曲がある場合は最後の曲を返却
+    return playerState.value.repeatMode === "all"
+      ? hasMultiple
+        ? tracks.length - 1
+        : 0
+      : undefined;
+  };
+
   return {
     playerState,
-    getPlayerState,
-    getMusicPlayer,
-    setMusicPlayer,
-    isPlaying,
+    setMusicDataRepository,
+    setTracks,
+    selectTrack,
     play,
     pause,
     stop,
-    setRepeadMode,
+    seek: setSeek,
+    setRepeatMode,
     toggleShuffle,
-    seek,
-    setTracks,
-    selectTrack,
+    isPlaying,
+    next,
+    previous,
   };
 });

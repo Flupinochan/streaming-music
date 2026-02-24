@@ -107,7 +107,7 @@ const sliderSeconds = computed<number>({
 const toggleRepeat = (): void => {
   const current = musicPlayerStore.playerState.repeatMode;
   const next = current === "none" ? "one" : current === "one" ? "all" : "none";
-  musicPlayerStore.setRepeadMode(next);
+  musicPlayerStore.setRepeatMode(next);
 };
 
 const handleSelectMusic = async (music: SubMusicMetadataDto): Promise<void> => {
