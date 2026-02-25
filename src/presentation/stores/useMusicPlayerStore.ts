@@ -50,31 +50,63 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // seek用タイマーID
   let tickId: number | undefined;
 
-  // DI
+  // DI用Setter
   const setFetchMusicUsecase = (usecase: FetchMusicUsecase): void => {
     fetchMusicUsecase = usecase;
   };
 
+  // 表示用ロジック --------------------------------------------------------------
+  const isPlaying = (): boolean => playerState.value.status === "playing";
   const canPlaying = (): boolean => {
     return (
       playerState.value.status !== "playing" &&
       playerState.value.id !== undefined
     );
   };
-  const isPlaying = (): boolean => playerState.value.status === "playing";
-
-  const disposeEngine = (): void => {
-    if (!howl) return;
-    howl.off("end");
-    clearTick();
-    howl.stop();
-    howl.unload();
-    howl = undefined;
-    currentUrl = undefined;
+  const canNext = (): boolean => {
+    return playerState.value.id !== undefined && calcNextIndex() !== undefined;
+  };
+  const canPrevious = (): boolean => {
+    return (
+      playerState.value.id !== undefined && calcPreviousIndex() !== undefined
+    );
+  };
+  const totalDurationLabel = (): string => {
+    const total = playerState.value.musicDurationSeconds;
+    const min = Math.floor(total / 60)
+      .toString()
+      .padStart(2, "0");
+    const sec = Math.floor(total % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${min}:${sec}`;
+  };
+  const currentPositionLabel = (): string => {
+    const current = playerState.value.positionSeconds;
+    const min = Math.floor(current / 60)
+      .toString()
+      .padStart(2, "0");
+    const sec = Math.floor(current % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${min}:${sec}`;
+  };
+  const remainDurationLabel = (): string => {
+    const remain = Math.max(
+      0,
+      playerState.value.musicDurationSeconds -
+        playerState.value.positionSeconds,
+    );
+    const min = Math.floor(remain / 60)
+      .toString()
+      .padStart(2, "0");
+    const sec = Math.floor(remain % 60)
+      .toString()
+      .padStart(2, "0");
+    return `- ${min}:${sec}`;
   };
 
-  // 再生位置の更新ロジック --------------------------------------------------------------
-  // seekとは再生位置のこと
+  // 再生位置(seek)用ロジック -------------------------------------------------------
   const getSeek = (): void => {
     if (!howl) return;
     playerState.value = {
@@ -89,10 +121,10 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     getSeek();
   };
 
-  // howlerから定期的に再生位置(seek)を取得するタイマー
+  // howlerから定期的に再生位置を取得するタイマー
   const startTick = (): void => {
     if (tickId !== undefined) return;
-    tickId = window.setInterval(getSeek, 500);
+    tickId = window.setInterval(getSeek, 1000);
   };
 
   const clearTick = (): void => {
@@ -104,11 +136,14 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // トラック管理 ----------------------------------------------------------
   const loadTrack = async (track: SubMusicMetadataDto): Promise<void> => {
     if (!fetchMusicUsecase) return;
+    // S3から曲のURLを取得
     const url = await fetchMusicUsecase.fetchMusic(
       new FetchMusicDto(track.musicS3Path),
     );
+
     if (howl && currentUrl === url) return;
     disposeEngine();
+    // 曲をロード
     currentUrl = url;
     howl = new Howl({
       src: [url.toString()],
@@ -167,15 +202,28 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     if (tracks.value[index]) {
       await loadTrack(tracks.value[index]);
     }
+
     if (isPlaying()) {
       howl?.play();
     }
+
     history = [];
+
     playerState.value = {
       ...playerState.value,
       ...track,
       positionSeconds: 0,
     };
+  };
+
+  const disposeEngine = (): void => {
+    if (!howl) return;
+    howl.off("end");
+    clearTick();
+    howl.stop();
+    howl.unload();
+    howl = undefined;
+    currentUrl = undefined;
   };
 
   // 再生操作 --------------------------------------------------------------
@@ -234,13 +282,22 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
       history = [];
     }
 
+    // 曲のロード
     if (tracks.value[index]) {
       await loadTrack(tracks.value[index]);
     }
 
+    // 再生中なら新しい曲を再生
     if (playerState.value.status === "playing") {
       howl?.play();
     }
+
+    // 選択中の曲を更新
+    playerState.value = {
+      ...playerState.value,
+      ...tracks.value[index],
+      positionSeconds: 0,
+    };
 
     return tracks.value[index];
   };
@@ -254,19 +311,27 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     const histIdx = history.lastIndexOf(prevIdx);
     if (histIdx >= 0) history.splice(histIdx, 1);
 
+    // 曲のロード
     if (tracks.value[index]) {
       await loadTrack(tracks.value[index]);
     }
 
+    // 再生中なら新しい曲を再生
     if (playerState.value.status === "playing") {
       howl?.play();
     }
+
+    // 選択中の曲を更新
+    playerState.value = {
+      ...playerState.value,
+      ...tracks.value[index],
+      positionSeconds: 0,
+    };
 
     return tracks.value[index];
   };
 
   // next/previous 計算ロジック --------------------------------------------
-
   // 次に再生する曲のindexを計算して返却するロジック
   // 状態変更は行わない。上位関数である next() で状態変更は実施
   // 詳細は README.md を参照
@@ -369,7 +434,12 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     toggleShuffle,
     isPlaying,
     canPlaying,
+    canNext,
+    canPrevious,
     next,
     previous,
+    totalDurationLabel,
+    currentPositionLabel,
+    remainDurationLabel,
   };
 });

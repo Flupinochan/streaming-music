@@ -1,4 +1,12 @@
-import { mdiFileImage } from "@mdi/js";
+import {
+  mdiPause,
+  mdiPlay,
+  mdiRepeat,
+  mdiRepeatOnce,
+  mdiShuffleVariant,
+  mdiSkipNext,
+  mdiSkipPrevious,
+} from "@mdi/js";
 import type { MusicMetadataSchema } from "amplify/data/resource";
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
@@ -47,7 +55,13 @@ const vuetify = createVuetify({
     defaultSet: "mdi",
     aliases: {
       ...aliases,
-      fileImage: mdiFileImage,
+      mdiPlay,
+      mdiSkipNext,
+      mdiSkipPrevious,
+      mdiPause,
+      mdiRepeat,
+      mdiRepeatOnce,
+      mdiShuffleVariant,
     },
     sets: {
       mdi,
@@ -61,9 +75,16 @@ const vuetify = createVuetify({
     },
   },
   defaults: {
-    global: {
+    // globalは使用しない
+    // global: {},
+    VBtn: {
       color: "primary",
-      variant: "outlined",
+    },
+    VSlider: {
+      color: "primary",
+    },
+    VListItemTitle: {
+      class: "primary",
     },
   },
 });
