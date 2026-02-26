@@ -15,6 +15,13 @@ const routes = [
     component: GuestPage,
   },
   {
+    name: "detail",
+    path: "/detail",
+    alias: ["/detail"],
+    component: (): Promise<{ default: Component }> =>
+      import("@/presentation/view/components/MusicListPlayerDetail.vue"),
+  },
+  {
     name: "auth",
     path: "/auth",
     component: (): Promise<{ default: Component }> =>

@@ -1,38 +1,10 @@
 <template>
-  <v-list
-    v-if="musicPlayerStore.tracks.length > 0"
-    select-strategy="single-independent"
-    v-model:selected="selectedIds"
-    :disabled="musicStore.loading"
-  >
-    <v-list-item
-      v-for="music in musicPlayerStore.tracks"
-      :key="music.id"
-      :value="music.id"
-      color="primary"
-    >
-      <template #prepend>
-        <v-img
-          :src="music.artworkThumbnailUrl"
-          style="view-transition-name: artwork"
-          class="me-2"
-          width="48"
-          height="48"
-          aspect-ratio="1"
-          cover
-          rounded="sm"
-          @click="handleImageClick()"
-        >
-          <template #placeholder>
-            <v-skeleton-loader type="image" width="48" height="48" />
-          </template>
-        </v-img>
-      </template>
-      <v-list-item-title>
-        {{ formatTitle(music) }}
-      </v-list-item-title>
-    </v-list-item>
-  </v-list>
+  <v-img
+    :src="musicPlayerStore.playerState.artworkUrl"
+    style="view-transition-name: artwork"
+    class="overlay"
+    @click="handleImageClick()"
+  />
 
   <!-- 再生位置 -->
   <v-container fluid>
@@ -177,7 +149,7 @@ const musicPlayerStore = useMusicPlayerStore();
 const router = useRouter();
 
 const handleImageClick = (): void => {
-  router.push({ name: "detail" });
+  router.push({ name: "home" });
 };
 
 const sliderSeconds = computed<number>({
