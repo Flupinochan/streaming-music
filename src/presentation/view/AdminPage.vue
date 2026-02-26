@@ -1,51 +1,43 @@
 <template>
-  <PageShell>
-    <template #actions>
-      <v-btn :to="{ name: 'home' }">Home</v-btn>
-    </template>
+  <MusicListPlayer />
 
-    <MusicListPlayer />
-
-    <v-file-input
-      label="Music file input"
-      accept="audio/*"
-      variant="solo"
-      prepend-icon="$fileImage"
-      show-size
-      @change="onFileSelected"
-    />
-    <v-file-input
-      label="Artwork image file input"
-      accept="image/*"
-      variant="solo"
-      prepend-icon="$fileImage"
-      show-size
-      @change="onArtworkSelected"
-    />
-    <v-btn
-      :disabled="
-        !selectedMusicFile || !selectedArtworkFile || musicStore.loading
-      "
-      :loading="musicStore.loading"
-      @click="handleUpload"
-    >
-      アップロード
-    </v-btn>
-    <v-btn
-      :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
-      :loading="musicStore.loading"
-      @click="handleDelete"
-    >
-      削除
-    </v-btn>
-  </PageShell>
+  <v-file-input
+    label="Music file input"
+    accept="audio/*"
+    variant="solo"
+    prepend-icon="$fileImage"
+    show-size
+    @change="onFileSelected"
+  />
+  <v-file-input
+    label="Artwork image file input"
+    accept="image/*"
+    variant="solo"
+    prepend-icon="$fileImage"
+    show-size
+    @change="onArtworkSelected"
+  />
+  <v-btn
+    :disabled="!selectedMusicFile || !selectedArtworkFile || musicStore.loading"
+    :loading="musicStore.loading"
+    @click="handleUpload"
+  >
+    アップロード
+  </v-btn>
+  <v-btn
+    :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
+    :loading="musicStore.loading"
+    @click="handleDelete"
+  >
+    削除
+  </v-btn>
 </template>
 
 <script setup lang="ts">
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
-import PageShell from "@/presentation/view/components/PageShell.vue";
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useMusicPlayerStore } from "../stores/useMusicPlayerStore";
 
 const musicStore = useMusicStore();
@@ -124,6 +116,22 @@ const handleDelete = async (): Promise<void> => {
     artworkImagePath: musicPlayerStore.playerState.artworkS3Path,
   });
 };
+
+const router = useRouter();
+
+const handleKeydown = (e: KeyboardEvent): void => {
+  if (e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    router.push({ path: "home" });
+  }
+};
+
+onMounted(() => {
+  window.addEventListener("keydown", handleKeydown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeydown);
+});
 </script>
 
 <style scoped></style>

@@ -1,31 +1,51 @@
 <template>
-  <PageShell>
-    <template #actions>
-      <v-btn :to="{ name: 'home' }">Home</v-btn>
-    </template>
-    <v-card max-width="520">
-      <v-card-title>Sign in</v-card-title>
-      <v-card-text>
-        <!-- 認証エラー時のメッセージ表示 -->
-        <v-alert v-if="errorMessage" type="error" variant="tonal">
-          {{ errorMessage }}
+  <v-card max-width="520">
+    <v-card-title>Sign in</v-card-title>
+    <v-card-text>
+      <!-- 認証エラー時のメッセージ表示 -->
+      <v-alert v-if="errorMessage" type="error" variant="tonal">
+        {{ errorMessage }}
+      </v-alert>
+
+      <!-- Email -->
+      <v-text-field
+        v-model="email"
+        label="Email"
+        type="email"
+        autocomplete="email"
+        :disabled="isLoading"
+      />
+
+      <!-- Password -->
+      <v-text-field
+        v-model="password"
+        label="Password"
+        type="password"
+        autocomplete="current-password"
+        :disabled="isLoading"
+      />
+
+      <v-btn
+        class="mb-4"
+        block
+        :loading="isLoading"
+        :disabled="isLoading || !email || !password"
+        @click="handleSignIn"
+      >
+        Sign in
+      </v-btn>
+
+      <!-- パスワード再設定が必要な場合 -->
+      <div v-if="requiresNewPassword">
+        <v-alert type="info" variant="tonal" class="mb-4">
+          New password is required.
         </v-alert>
 
-        <!-- Email -->
         <v-text-field
-          v-model="email"
-          label="Email"
-          type="email"
-          autocomplete="email"
-          :disabled="isLoading"
-        />
-
-        <!-- Password -->
-        <v-text-field
-          v-model="password"
-          label="Password"
+          v-model="newPassword"
+          label="New password"
           type="password"
-          autocomplete="current-password"
+          autocomplete="new-password"
           :disabled="isLoading"
         />
 
@@ -33,45 +53,19 @@
           class="mb-4"
           block
           :loading="isLoading"
-          :disabled="isLoading || !email || !password"
-          @click="handleSignIn"
+          :disabled="isLoading || !newPassword"
+          @click="handleConfirmNewPassword"
         >
-          Sign in
+          Set new password
         </v-btn>
-
-        <!-- パスワード再設定が必要な場合 -->
-        <div v-if="requiresNewPassword">
-          <v-alert type="info" variant="tonal" class="mb-4">
-            New password is required.
-          </v-alert>
-
-          <v-text-field
-            v-model="newPassword"
-            label="New password"
-            type="password"
-            autocomplete="new-password"
-            :disabled="isLoading"
-          />
-
-          <v-btn
-            class="mb-4"
-            block
-            :loading="isLoading"
-            :disabled="isLoading || !newPassword"
-            @click="handleConfirmNewPassword"
-          >
-            Set new password
-          </v-btn>
-        </div>
-      </v-card-text>
-    </v-card>
-  </PageShell>
+      </div>
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup lang="ts">
-import PageShell from "@/presentation/view/components/PageShell.vue";
 import { confirmSignIn, getCurrentUser, signIn } from "aws-amplify/auth";
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const router = useRouter();
@@ -146,13 +140,24 @@ const handleConfirmNewPassword = async (): Promise<void> => {
   }
 };
 
+const handleKeydown = (e: KeyboardEvent): void => {
+  if (e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    router.push({ path: "home" });
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener("keydown", handleKeydown);
   try {
     // getCurrentUserはサインイン済みの場合に成功し、失敗するとエラーがスローされる
     await getCurrentUser();
     // サインイン済みの場合はリダイレクト
     await router.replace(redirectPath.value);
   } catch {}
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 
