@@ -1,0 +1,4 @@
+/* 全ての v-row 内 v-col のpaddingを0で初期化 */
+.v-row > .v-col {
+  padding: 0 !important;
+}

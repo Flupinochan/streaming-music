@@ -20,6 +20,7 @@ import "vuetify/styles";
 import colors from "vuetify/util/colors";
 import outputs from "../amplify_outputs.json";
 import App from "./App.vue";
+import "./assets/styles/vuetify-overrides.css";
 import { MusicDataRepositoryAmplify } from "./infrastructure/repositories/musicDataRepositoryAmplify";
 import { MusicDataRepositoryImpl } from "./infrastructure/repositories/musicDataRepositoryImpl";
 import { MusicMetadataRepositoryAmplify } from "./infrastructure/repositories/musicMetadataRepositoryAmplify";

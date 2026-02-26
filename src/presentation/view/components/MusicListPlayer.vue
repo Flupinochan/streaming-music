@@ -19,7 +19,7 @@
 
   <!-- 再生位置 -->
   <v-container fluid>
-    <v-row align="center">
+    <v-row align="center" class="ga-2">
       <v-col cols="auto">
         <p class="text-caption">
           {{ musicPlayerStore.currentPositionLabel() }}
@@ -44,12 +44,13 @@
   </v-container>
 
   <v-container class="d-flex justify-center align-center" fluid>
-    <v-row justify="center" class="ga-2">
+    <v-row justify="center" class="play-button-padding">
       <!-- リピート -->
       <v-col cols="auto">
         <!-- none -->
         <v-btn
           v-if="musicPlayerStore.playerState.repeatMode === 'none'"
+          :size="btnSize"
           icon="$mdiRepeat"
           color="on-surface"
           variant="text"
@@ -58,6 +59,7 @@
         <!-- all -->
         <v-btn
           v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
+          :size="btnSize"
           icon="$mdiRepeat"
           color="primary"
           variant="text"
@@ -66,6 +68,7 @@
         <!-- one -->
         <v-btn
           v-else
+          :size="btnSize"
           icon="$mdiRepeatOnce"
           color="primary"
           variant="text"
@@ -76,6 +79,7 @@
       <!-- 前へ -->
       <v-col cols="auto">
         <v-btn
+          :size="btnSize"
           color="on-surface"
           icon="$mdiSkipPrevious"
           variant="text"
@@ -89,6 +93,7 @@
         <!-- 再生 -->
         <v-btn
           v-if="musicPlayerStore.isPlaying()"
+          :size="btnSize"
           icon="$mdiPause"
           variant="tonal"
           @click="musicPlayerStore.pause()"
@@ -97,6 +102,7 @@
         <!-- 一時停止 -->
         <v-btn
           v-else
+          :size="btnSize"
           color="on-surface"
           icon="$mdiPlay"
           variant="tonal"
@@ -109,6 +115,7 @@
       <!-- 次へ -->
       <v-col cols="auto">
         <v-btn
+          :size="btnSize"
           color="on-surface"
           icon="$mdiSkipNext"
           variant="text"
@@ -120,6 +127,7 @@
       <!-- シャッフル -->
       <v-col cols="auto">
         <v-btn
+          :size="btnSize"
           icon="$mdiShuffleVariant"
           :color="
             musicPlayerStore.playerState.shuffleEnabled
@@ -136,11 +144,13 @@
 </template>
 
 <script setup lang="ts">
+import { useResponsiveButton } from "@/presentation/composables/useResponsiveButton";
 import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import { computed, onMounted, onUnmounted } from "vue";
 
+const { btnSize } = useResponsiveButton();
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 
@@ -190,4 +200,8 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.play-button-padding {
+  gap: clamp(0.5rem, 0.185rem + 1.34vw, 2rem);
+}
+</style>
