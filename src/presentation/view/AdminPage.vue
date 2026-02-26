@@ -92,9 +92,12 @@ const handleUpload = async (): Promise<void> => {
   if (!selectedMusicFile.value) return;
   if (!selectedArtworkFile.value) return;
   try {
+    const thumbnailBlob = await createThumbnail(selectedArtworkFile.value);
+
     await musicStore.uploadMusic({
       musicDataFile: selectedMusicFile.value,
       artworkImageFile: selectedArtworkFile.value,
+      artworkThumbnailImageBlob: thumbnailBlob,
       musicDurationSeconds: selectedMusicDurationSeconds.value ?? 0,
     });
   } catch (error) {
@@ -117,8 +120,42 @@ const handleDelete = async (): Promise<void> => {
   });
 };
 
-const router = useRouter();
+async function createThumbnail(file: File, maxSize = 300): Promise<Blob> {
+  const img = new Image();
+  const reader = new FileReader();
 
+  return new Promise((resolve, reject) => {
+    reader.onload = (): void => {
+      img.src = reader.result as string;
+    };
+
+    img.onload = (): void => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject();
+
+      const scale = Math.min(maxSize / img.width, maxSize / img.height);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject();
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.8,
+      );
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+const router = useRouter();
 const handleKeydown = (e: KeyboardEvent): void => {
   if (e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "a") {
     router.push({ path: "home" });

@@ -1,5 +1,6 @@
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
+import { ArtworkThumbnailImagePath } from "@/domain/value_objects/artworkThumbnailImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
 import { TrackId } from "@/domain/value_objects/trackId";
 import { MusicMetadataDto } from "@/infrastructure/repositories/dto/musicMetadataDto";
@@ -19,6 +20,7 @@ export const musicMetadataToMusicMetadataDto = (
     musicMetadata.musicDataBytes,
     musicMetadata.musicDataPath.toString(),
     musicMetadata.artworkImagePath.toString(),
+    musicMetadata.artworkThumbnailImagePath.toString(),
   );
 };
 
@@ -33,6 +35,7 @@ export const musicMetadataDtoToMusicMetadata = (
     dto.musicDataBytes,
     new MusicDataPath(dto.musicS3Path),
     new ArtworkImagePath(dto.artworkS3Path),
+    new ArtworkThumbnailImagePath(dto.artworkThumbnailS3Path),
   );
 };
 
@@ -47,6 +50,7 @@ export const amplifyModelToMusicMetadataDto = (
     item.musicDataBytes,
     item.musicDataPath,
     item.artworkImagePath,
+    item.artworkThumbnailImagePath,
   );
 };
 
@@ -60,4 +64,5 @@ export const musicMetadataDtoToCreateAmplifyModel = (
   musicDataBytes: dto.musicDataBytes,
   musicDataPath: dto.musicS3Path,
   artworkImagePath: dto.artworkS3Path,
+  artworkThumbnailImagePath: dto.artworkThumbnailS3Path,
 });

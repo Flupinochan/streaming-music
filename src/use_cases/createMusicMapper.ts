@@ -2,6 +2,7 @@ import { ImageBinaryObject } from "@/domain/entities/imageBinaryObject";
 import { MusicBinaryObject } from "@/domain/entities/musicBinaryObject";
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
+import { ArtworkThumbnailImagePath } from "@/domain/value_objects/artworkThumbnailImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
 import type { CreateMusicDto } from "./createMusicDto";
 
@@ -10,6 +11,8 @@ interface CreateMusicInput {
   musicData: MusicBinaryObject;
   artworkImagePath: ArtworkImagePath;
   artworkImage: ImageBinaryObject;
+  artworkThumbnailImagePath: ArtworkThumbnailImagePath;
+  artworkThumbnailImage: ImageBinaryObject;
   musicMetadata: Omit<MusicMetadata, "id">;
 }
 
@@ -24,9 +27,18 @@ export const createMusicDtoToCreateMusicInput = async (
     dto.artworkImageFile.name,
   );
 
-  const [musicData, artworkImage] = await Promise.all([
+  const artworkThumbnailImagePath =
+    ArtworkThumbnailImagePath.createFromFileName(dto.artworkImageFile.name);
+  const arrayBuffer = await dto.artworkThumbnailImageBlob.arrayBuffer();
+
+  const [musicData, artworkImage, artworkThumbnailImage] = await Promise.all([
     MusicBinaryObject.fromFile(dto.musicDataFile),
     ImageBinaryObject.fromFile(dto.artworkImageFile),
+    ImageBinaryObject.create(
+      arrayBuffer,
+      dto.artworkImageFile.type,
+      dto.artworkImageFile.name,
+    ),
   ]);
 
   const musicMetadata = MusicMetadata.create(
@@ -35,6 +47,7 @@ export const createMusicDtoToCreateMusicInput = async (
     musicData.size,
     musicDataPath,
     artworkImagePath,
+    artworkThumbnailImagePath,
   );
 
   return {
@@ -42,6 +55,8 @@ export const createMusicDtoToCreateMusicInput = async (
     musicData,
     artworkImagePath,
     artworkImage,
+    artworkThumbnailImagePath,
+    artworkThumbnailImage,
     musicMetadata,
   };
 };

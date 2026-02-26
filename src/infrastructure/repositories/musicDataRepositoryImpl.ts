@@ -2,6 +2,7 @@ import type { ImageBinaryObject } from "@/domain/entities/imageBinaryObject";
 import type { MusicBinaryObject } from "@/domain/entities/musicBinaryObject";
 import type { MusicDataRepository } from "@/domain/repositories/musicDataRepository";
 import type { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
+import type { ArtworkThumbnailImagePath } from "@/domain/value_objects/artworkThumbnailImagePath";
 import type { MusicDataPath } from "@/domain/value_objects/musicDataPath";
 import type { MusicPath } from "@/domain/value_objects/musicPath";
 import type {
@@ -21,7 +22,7 @@ export class MusicDataRepositoryImpl implements MusicDataRepository {
     this.repo = repo;
   }
 
-  getMusicDataUrl(musicDataPath: MusicDataPath): Promise<URL> {
+  getMusicDataUrl(musicDataPath: MusicPath): Promise<URL> {
     return this.repo.getMusicDataUrl(musicDataPath.toString());
   }
 
@@ -43,6 +44,17 @@ export class MusicDataRepositoryImpl implements MusicDataRepository {
     const dto: UploadArtworkImageInputDto = createUploadArtworkDto(
       artworkImagePath,
       artworkImage,
+    );
+    await this.repo.uploadArtworkImage(dto);
+  }
+
+  async uploadArtworkThumbnailImage(
+    artworkThumbnailImagePath: ArtworkThumbnailImagePath,
+    artworkThumbnailImage: ImageBinaryObject,
+  ): Promise<void> {
+    const dto: UploadArtworkImageInputDto = createUploadArtworkDto(
+      artworkThumbnailImagePath,
+      artworkThumbnailImage,
     );
     await this.repo.uploadArtworkImage(dto);
   }

@@ -1,6 +1,14 @@
 <template>
+  <img
+    v-if="showPlayer"
+    :src="musicPlayerStore.playerState.artworkUrl"
+    style="view-transition-name: artwork"
+    class="overlay"
+    @click="togglePlayer"
+  />
+
   <v-list
-    v-if="musicPlayerStore.tracks.length > 0"
+    v-if="musicPlayerStore.tracks.length > 0 && !showPlayer"
     select-strategy="single-independent"
     v-model:selected="selectedIds"
     :disabled="musicStore.loading"
@@ -11,6 +19,23 @@
       :value="music.id"
       color="primary"
     >
+      <template #prepend>
+        <v-img
+          :src="music.artworkThumbnailUrl"
+          style="view-transition-name: artwork"
+          class="me-2"
+          width="48"
+          height="48"
+          aspect-ratio="1"
+          cover
+          rounded="sm"
+          @click="togglePlayer()"
+        >
+          <template #placeholder>
+            <v-skeleton-loader type="image" width="48" height="48" />
+          </template>
+        </v-img>
+      </template>
       <v-list-item-title>
         {{ formatTitle(music) }}
       </v-list-item-title>
@@ -32,6 +57,7 @@
           :min="0"
           :max="Math.max(0, musicPlayerStore.playerState.musicDurationSeconds)"
           :step="1"
+          :disabled="!musicPlayerStore.canPlaying()"
           hide-details
         />
       </v-col>
@@ -90,7 +116,7 @@
 
       <!-- 再生/一時停止 -->
       <v-col cols="auto">
-        <!-- 再生 -->
+        <!-- 一時停止 -->
         <v-btn
           v-if="musicPlayerStore.isPlaying()"
           :size="btnSize"
@@ -99,7 +125,7 @@
           @click="musicPlayerStore.pause()"
         >
         </v-btn>
-        <!-- 一時停止 -->
+        <!-- 再生 -->
         <v-btn
           v-else
           :size="btnSize"
@@ -145,10 +171,12 @@
 
 <script setup lang="ts">
 import { useResponsiveButton } from "@/presentation/composables/useResponsiveButton";
-import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
+import {
+  useMusicPlayerStore,
+  type SubMusicMetadataViewDto,
+} from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
-import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const { btnSize } = useResponsiveButton();
 const musicStore = useMusicStore();
@@ -180,7 +208,7 @@ const selectedIds = computed<string[]>({
   },
 });
 
-const formatTitle = (music: SubMusicMetadataDto): string => {
+const formatTitle = (music: SubMusicMetadataViewDto): string => {
   return (
     music.title +
     " - " +
@@ -190,6 +218,17 @@ const formatTitle = (music: SubMusicMetadataDto): string => {
     "MB"
   );
 };
+
+const showPlayer = ref(false);
+function togglePlayer(): void {
+  if (document.startViewTransition) {
+    document.startViewTransition(() => {
+      showPlayer.value = !showPlayer.value;
+    });
+  } else {
+    showPlayer.value = !showPlayer.value;
+  }
+}
 
 onMounted(async () => {
   musicStore.startMusicListSubscription();

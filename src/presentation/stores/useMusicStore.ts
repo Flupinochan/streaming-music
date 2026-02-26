@@ -1,14 +1,21 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { SubMusicMetadataUsecase } from "./../../use_cases/subMusicMetadataUsecase";
-import { useMusicPlayerStore } from "./useMusicPlayerStore";
+import {
+  useMusicPlayerStore,
+  type SubMusicMetadataViewDto,
+} from "./useMusicPlayerStore";
 
+import { FetchMusicDto } from "@/use_cases/fetchMusicDto";
+import type { FetchMusicUsecase } from "@/use_cases/fetchMusicUsecase";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import type { CreateMusicDto } from "../../use_cases/createMusicDto";
 import type { CreateMusicUsecase } from "../../use_cases/createMusicUsecase";
 import type { RemoveMusicDto } from "../../use_cases/removeMusicDto";
 import type { RemoveMusicUsecase } from "../../use_cases/removeMusicUsecase";
 
 export const useMusicStore = defineStore("music", () => {
+  let fetchMusicUsecase: FetchMusicUsecase | undefined = undefined;
   let createMusicUsecase: CreateMusicUsecase | undefined = undefined;
   let removeMusicUsecase: RemoveMusicUsecase | undefined = undefined;
   let subMusicMetadataUsecase: SubMusicMetadataUsecase | undefined = undefined;
@@ -19,6 +26,15 @@ export const useMusicStore = defineStore("music", () => {
   const error = ref<string | undefined>(undefined);
 
   let subscription: { unsubscribe: () => void } | undefined = undefined;
+
+  const getFetchMusicUsecase = (): FetchMusicUsecase => {
+    if (!fetchMusicUsecase) {
+      throw new Error(
+        "FetchMusicUsecase is not set. Call useMusicStore(pinia).setFetchMusicUsecase() in main.ts.",
+      );
+    }
+    return fetchMusicUsecase;
+  };
 
   const getCreateMusicUsecase = (): CreateMusicUsecase => {
     if (!createMusicUsecase) {
@@ -48,6 +64,10 @@ export const useMusicStore = defineStore("music", () => {
   };
 
   // DI用Setter
+  const setFetchMusicUsecase = (value: FetchMusicUsecase): void => {
+    fetchMusicUsecase = value;
+  };
+
   const setCreateMusicUsecase = (value: CreateMusicUsecase): void => {
     createMusicUsecase = value;
   };
@@ -65,11 +85,28 @@ export const useMusicStore = defineStore("music", () => {
     if (subscription) return;
 
     error.value = undefined;
+    const getUseCase = getFetchMusicUsecase();
     const usecase = getSubMusicMetadataUsecase();
 
     subscription = usecase.observeMusicMetadata().subscribe({
-      next: (dtos) => {
-        musicPlayerStore.setTracks(dtos);
+      next: async (dtos: SubMusicMetadataDto[]) => {
+        const enriched: SubMusicMetadataViewDto[] = await Promise.all(
+          dtos.map(async (dto) => {
+            const artworkUrl = await getUseCase.fetchMusic(
+              new FetchMusicDto(dto.artworkS3Path),
+            );
+            const thumbnailUrl = await getUseCase.fetchMusic(
+              new FetchMusicDto(dto.artworkThumbnailS3Path),
+            );
+            return {
+              ...dto,
+              artworkUrl: artworkUrl.toString(),
+              artworkThumbnailUrl: thumbnailUrl.toString(),
+            };
+          }),
+        );
+
+        musicPlayerStore.setTracks(enriched);
       },
       error: (e) => {
         const errorMessage = e instanceof Error ? e.message : "";
@@ -116,6 +153,7 @@ export const useMusicStore = defineStore("music", () => {
   }
 
   return {
+    setFetchMusicUsecase,
     setCreateMusicUsecase,
     setRemoveMusicUsecase,
     setSubMusicMetadataUsecase,

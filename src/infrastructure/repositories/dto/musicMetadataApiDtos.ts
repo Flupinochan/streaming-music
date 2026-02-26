@@ -6,6 +6,7 @@ export class CreateMusicMetadataRequestDto {
     public readonly musicDataBytes: number,
     public readonly musicS3Path: string,
     public readonly artworkS3Path: string,
+    public readonly artworkThumbnailS3Path: string,
   ) {}
 }
 
@@ -17,5 +18,6 @@ export class MusicMetadataResponseDto {
     public readonly musicDataBytes: number,
     public readonly musicS3Path: string,
     public readonly artworkS3Path: string,
+    public readonly artworkThumbnailS3Path: string,
   ) {}
 }

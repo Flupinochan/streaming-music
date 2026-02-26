@@ -111,9 +111,10 @@ const subMusicMetadataUsecase = new SubMusicMetadataUsecase(
   musicMetadataRepository,
 );
 const fetchMusicUsecase = new FetchMusicUsecase(musicRepository);
+useMusicStore(pinia).setFetchMusicUsecase(fetchMusicUsecase);
+useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
 useMusicStore(pinia).setCreateMusicUsecase(createMusicUsecase);
 useMusicStore(pinia).setRemoveMusicUsecase(removeMusicUsecase);
-useMusicStore(pinia).setSubMusicMetadataUsecase(subMusicMetadataUsecase);
 useMusicPlayerStore(pinia).setFetchMusicUsecase(fetchMusicUsecase);
 
 app.mount("#app");

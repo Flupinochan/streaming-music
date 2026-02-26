@@ -11,5 +11,6 @@ export const toCreateMusicMetadataRequestDto = (
     entity.musicDataBytes,
     entity.musicDataPath.toString(),
     entity.artworkImagePath.toString(),
+    entity.artworkThumbnailImagePath.toString(),
   );
 };

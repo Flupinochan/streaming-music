@@ -1,14 +1,14 @@
-import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
+import { MusicPath } from "@/domain/value_objects/musicPath";
 import { FetchMusicDto } from "./fetchMusicDto";
 
 interface FetchMusicInput {
-  musicDataPath: MusicDataPath;
+  musicDataPath: MusicPath;
 }
 
 export const fetchMusicDtoToFetchMusicInput = (
   dto: FetchMusicDto,
 ): FetchMusicInput => {
-  const musicDataPath = new MusicDataPath(dto.musicDataPath);
+  const musicDataPath = new MusicPath(dto.musicDataPath);
 
   return {
     musicDataPath,

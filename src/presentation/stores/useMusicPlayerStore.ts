@@ -7,11 +7,15 @@ import { ref } from "vue";
 
 export type PlayerStatus = "stopped" | "playing" | "paused";
 export type RepeatMode = "none" | "one" | "all";
+export type SubMusicMetadataViewDto = SubMusicMetadataDto & {
+  artworkUrl: string;
+  artworkThumbnailUrl: string;
+};
 export interface PlayerState {
   id: string | undefined;
   title: string | undefined;
-  musicS3Path: string | undefined;
-  artworkS3Path: string | undefined;
+  artworkUrl: string | undefined;
+  artworkThumbnailUrl: string | undefined;
   positionSeconds: number;
   musicDurationSeconds: number;
   status: PlayerStatus;
@@ -28,8 +32,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   const playerState = ref<PlayerState>({
     id: undefined,
     title: undefined,
-    musicS3Path: undefined,
-    artworkS3Path: undefined,
+    artworkUrl: undefined,
+    artworkThumbnailUrl: undefined,
     positionSeconds: 0,
     musicDurationSeconds: 0,
     status: "stopped",
@@ -37,7 +41,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     shuffleEnabled: false,
   });
   // 曲のリスト
-  const tracks = ref<SubMusicMetadataDto[]>([]);
+  const tracks = ref<SubMusicMetadataViewDto[]>([]);
 
   // 内部データ --------------------------------------------------------------
   // queue配列の中で現在再生している曲のindex (-1の場合は再生する曲がない状態)
@@ -58,10 +62,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   // 表示用ロジック --------------------------------------------------------------
   const isPlaying = (): boolean => playerState.value.status === "playing";
   const canPlaying = (): boolean => {
-    return (
-      playerState.value.status !== "playing" &&
-      playerState.value.id !== undefined
-    );
+    return playerState.value.id !== undefined;
   };
   const canNext = (): boolean => {
     return playerState.value.id !== undefined && calcNextIndex() !== undefined;
@@ -134,7 +135,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   };
 
   // トラック管理 ----------------------------------------------------------
-  const loadTrack = async (track: SubMusicMetadataDto): Promise<void> => {
+  const loadTrack = async (track: SubMusicMetadataViewDto): Promise<void> => {
     if (!fetchMusicUsecase) return;
     // S3から曲のURLを取得
     const url = await fetchMusicUsecase.fetchMusic(
@@ -169,7 +170,10 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     });
   };
 
-  const setTracks = (newTracks: SubMusicMetadataDto[], startAt = 0): void => {
+  const setTracks = (
+    newTracks: SubMusicMetadataViewDto[],
+    startAt = 0,
+  ): void => {
     tracks.value = newTracks;
     index =
       tracks.value.length === 0
@@ -180,15 +184,15 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
   };
 
   const selectTrack = async (
-    track: SubMusicMetadataDto | undefined,
+    track: SubMusicMetadataViewDto | undefined,
   ): Promise<void> => {
     if (!track) {
       playerState.value = {
         ...playerState.value,
         id: undefined,
         title: undefined,
-        musicS3Path: undefined,
-        artworkS3Path: undefined,
+        artworkUrl: undefined,
+        artworkThumbnailUrl: undefined,
         positionSeconds: 0,
         musicDurationSeconds: 0,
         status: "stopped",
@@ -263,7 +267,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     }
   };
 
-  const next = async (): Promise<SubMusicMetadataDto | undefined> => {
+  const next = async (): Promise<SubMusicMetadataViewDto | undefined> => {
     const nextIdx = calcNextIndex();
     if (nextIdx === undefined) return undefined;
     index = nextIdx;
@@ -302,7 +306,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     return tracks.value[index];
   };
 
-  const previous = async (): Promise<SubMusicMetadataDto | undefined> => {
+  const previous = async (): Promise<SubMusicMetadataViewDto | undefined> => {
     const prevIdx = calcPreviousIndex();
     if (prevIdx === undefined) return undefined;
     index = prevIdx;

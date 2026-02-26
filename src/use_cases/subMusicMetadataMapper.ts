@@ -11,5 +11,6 @@ export const musicMetadataToSubMusicMetadataDto = (
     musicMetadata.musicDataBytes,
     musicMetadata.musicDataPath.toString(),
     musicMetadata.artworkImagePath.toString(),
+    musicMetadata.artworkThumbnailImagePath.toString(),
   );
 };

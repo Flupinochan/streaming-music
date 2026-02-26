@@ -1,12 +1,12 @@
 import type { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
-import type { MusicDataPath } from "@/domain/value_objects/musicDataPath";
+import type { MusicPath } from "@/domain/value_objects/musicPath";
 import { BinaryObjectDto } from "./binaryObjectDto";
 
 export class UploadMusicDataInputDto {
   public readonly musicDataPath: string;
   public readonly musicData: BinaryObjectDto;
 
-  constructor(musicDataPath: MusicDataPath, musicData: BinaryObjectDto) {
+  constructor(musicDataPath: MusicPath, musicData: BinaryObjectDto) {
     this.musicDataPath = musicDataPath.toString();
     this.musicData = musicData;
   }

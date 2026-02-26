@@ -8,6 +8,7 @@ const musicMetadataSchema = a.schema({
       musicDataBytes: a.integer().required(),
       musicDataPath: a.string().required(),
       artworkImagePath: a.string().required(),
+      artworkThumbnailImagePath: a.string().required(),
     })
     .authorization((allow) => [
       allow.guest().to(["read"]),

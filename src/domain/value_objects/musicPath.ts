@@ -1,7 +1,7 @@
 /**
  * Base class for music paths ensuring they start with "music/".
  */
-export abstract class MusicPath {
+export class MusicPath {
   protected readonly value: string;
 
   constructor(path: string) {

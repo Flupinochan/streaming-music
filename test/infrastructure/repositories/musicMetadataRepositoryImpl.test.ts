@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MusicMetadata } from "@/domain/entities/musicMetadata";
 import type { MusicMetadataRepository } from "@/domain/repositories/musicMetadataRepository";
 import { ArtworkImagePath } from "@/domain/value_objects/artworkImagePath";
+import { ArtworkThumbnailImagePath } from "@/domain/value_objects/artworkThumbnailImagePath";
 import { MusicDataPath } from "@/domain/value_objects/musicDataPath";
 import type { TrackId } from "@/domain/value_objects/trackId";
 import { MusicMetadataRepositoryAmplify } from "@/infrastructure/repositories/musicMetadataRepositoryAmplify";
@@ -54,8 +55,17 @@ describe("MusicMetadataRepository integration", () => {
 
     const musicPath = MusicDataPath.createFromFileName(musicFileName);
     const artworkPath = ArtworkImagePath.createFromFileName(artworkFileName);
+    const artworkThumbnailImagePath =
+      ArtworkThumbnailImagePath.createFromFileName(artworkFileName);
 
-    return MusicMetadata.create(prefix, 123, 1024 * 50, musicPath, artworkPath);
+    return MusicMetadata.create(
+      prefix,
+      123,
+      1024 * 50,
+      musicPath,
+      artworkPath,
+      artworkThumbnailImagePath,
+    );
   };
 
   it("createMusicMetadata and listMusicMetadata", async () => {

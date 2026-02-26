@@ -1,4 +1,5 @@
 import type { ArtworkImagePath } from "../value_objects/artworkImagePath";
+import type { ArtworkThumbnailImagePath } from "../value_objects/artworkThumbnailImagePath";
 import type { MusicDataPath } from "../value_objects/musicDataPath";
 import { TrackId } from "../value_objects/trackId";
 
@@ -11,6 +12,7 @@ export class MusicMetadata {
     public readonly musicDataBytes: number,
     public readonly musicDataPath: MusicDataPath,
     public readonly artworkImagePath: ArtworkImagePath,
+    public readonly artworkThumbnailImagePath: ArtworkThumbnailImagePath,
   ) {}
 
   static create(
@@ -19,6 +21,7 @@ export class MusicMetadata {
     musicDataBytes: number,
     musicDataPath: MusicDataPath,
     artworkImagePath: ArtworkImagePath,
+    artworkThumbnailImagePath: ArtworkThumbnailImagePath,
   ): MusicMetadata {
     return new MusicMetadata(
       TrackId.create(crypto.randomUUID()),
@@ -27,6 +30,7 @@ export class MusicMetadata {
       musicDataBytes,
       musicDataPath,
       artworkImagePath,
+      artworkThumbnailImagePath,
     );
   }
 

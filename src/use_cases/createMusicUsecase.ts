@@ -15,6 +15,8 @@ export class CreateMusicUsecase {
       musicData,
       artworkImagePath,
       artworkImage,
+      artworkThumbnailImagePath,
+      artworkThumbnailImage,
       musicMetadata,
     } = await createMusicDtoToCreateMusicInput(input);
 
@@ -23,6 +25,10 @@ export class CreateMusicUsecase {
       this.musicDataRepository.uploadArtworkImage(
         artworkImagePath,
         artworkImage,
+      ),
+      this.musicDataRepository.uploadArtworkThumbnailImage(
+        artworkThumbnailImagePath,
+        artworkThumbnailImage,
       ),
       this.musicMetadataRepository.createMusicMetadata(musicMetadata),
     ]);
