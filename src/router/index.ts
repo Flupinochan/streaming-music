@@ -1,7 +1,15 @@
 import { getCurrentUser } from "aws-amplify/auth";
 import type { Component } from "vue";
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHistory,
+  type RouteLocationNormalized,
+} from "vue-router";
 import GuestPage from "../presentation/view/GuestPage.vue";
+
+export type DetailProps = {
+  musicId: string;
+};
 
 const routes = [
   {
@@ -16,8 +24,11 @@ const routes = [
   },
   {
     name: "detail",
-    path: "/detail",
+    path: "/detail/:id",
     alias: ["/detail"],
+    props: (route: RouteLocationNormalized): DetailProps => ({
+      musicId: route.params.id as string,
+    }),
     component: (): Promise<{ default: Component }> =>
       import("@/presentation/view/components/MusicListPlayerDetail.vue"),
   },

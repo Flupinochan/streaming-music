@@ -139,14 +139,27 @@ import {
   useMusicPlayerStore,
   type SubMusicMetadataViewDto,
 } from "@/presentation/stores/useMusicPlayerStore";
-import { useMusicStore } from "@/presentation/stores/useMusicStore";
-import { computed, onMounted, onUnmounted } from "vue";
+import type { DetailProps } from "@/router";
+import { computed, watch } from "vue";
 import { useRouter } from "vue-router";
 
+const props = defineProps<DetailProps>();
+
 const { btnSize } = useResponsiveButton();
-const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 const router = useRouter();
+
+watch(
+  () => [musicPlayerStore.playerState, musicPlayerStore.tracks] as const,
+  ([state, tracks]) => {
+    if (tracks.length === 0) return;
+
+    if (state.id !== props.musicId) {
+      musicPlayerStore.selectTrackById(props.musicId);
+    }
+  },
+  { immediate: true, deep: true },
+);
 
 const handleImageClick = (): void => {
   router.push({ name: "home" });
@@ -188,14 +201,6 @@ const formatTitle = (music: SubMusicMetadataViewDto): string => {
     "MB"
   );
 };
-
-onMounted(async () => {
-  musicStore.startMusicListSubscription();
-});
-
-onUnmounted(() => {
-  musicStore.stopMusicListSubscription();
-});
 </script>
 
 <style scoped>

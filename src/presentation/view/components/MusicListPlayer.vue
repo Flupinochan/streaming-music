@@ -168,7 +168,7 @@ import {
   type SubMusicMetadataViewDto,
 } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 const { btnSize } = useResponsiveButton();
@@ -177,7 +177,11 @@ const musicPlayerStore = useMusicPlayerStore();
 const router = useRouter();
 
 const handleImageClick = (): void => {
-  router.push({ name: "detail" });
+  if (!musicPlayerStore.playerState.id) return;
+  router.push({
+    name: "detail",
+    params: { id: musicPlayerStore.playerState.id },
+  });
 };
 
 const sliderSeconds = computed<number>({
@@ -217,13 +221,7 @@ const formatTitle = (music: SubMusicMetadataViewDto): string => {
   );
 };
 
-onMounted(async () => {
-  musicStore.startMusicListSubscription();
-});
-
-onUnmounted(() => {
-  musicStore.stopMusicListSubscription();
-});
+// subscription is started once in App.vue, components no longer need to manage it
 </script>
 
 <style scoped>

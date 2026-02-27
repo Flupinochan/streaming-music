@@ -174,13 +174,31 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     newTracks: SubMusicMetadataViewDto[],
     startAt = 0,
   ): void => {
+    // 同じリストが再取得された場合は何もしない
+    if (
+      tracks.value.length === newTracks.length &&
+      tracks.value.every((t, i) => t.id === newTracks[i].id)
+    ) {
+      return;
+    }
+
     tracks.value = newTracks;
     index =
       tracks.value.length === 0
         ? -1
         : Math.max(0, Math.min(startAt, tracks.value.length - 1));
     history = [];
-    playerState.value = { ...playerState.value, status: "stopped" };
+
+    // リストが変わったタイミングでエンジンを破棄して状態をリセット
+    // 曲が削除された場合に再生できない状態になるのを防ぐため
+    // ※現状は、意図しない曲の停止を防ぐためコメントアウト
+    // disposeEngine();
+    // playerState.value = { ...playerState.value, status: "stopped" };
+  };
+
+  const selectTrackById = async (id: string): Promise<void> => {
+    const track = tracks.value.find((t) => t.id === id);
+    await selectTrack(track);
   };
 
   const selectTrack = async (
@@ -445,5 +463,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     totalDurationLabel,
     currentPositionLabel,
     remainDurationLabel,
+    selectTrackById,
   };
 });
