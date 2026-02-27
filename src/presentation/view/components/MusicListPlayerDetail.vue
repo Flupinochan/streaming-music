@@ -6,6 +6,7 @@
       backgroundImage: `url(${musicPlayerStore.playerState.artworkUrl})`,
       backgroundColor: 'rgba(0,0,0,0.8)',
       backgroundSize: 'cover',
+      backgroundPosition: 'center center',
       backgroundBlendMode: 'darken',
     }"
   >
