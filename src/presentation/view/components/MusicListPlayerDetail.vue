@@ -1,7 +1,7 @@
 <template>
   <v-container
     fluid
-    class="pa-0 ma-0 relative-container"
+    class="pa-0 ma-0 relative-container d-flex align-center justify-center"
     :style="{
       backgroundImage: `url(${musicPlayerStore.playerState.artworkUrl})`,
       backgroundColor: 'rgba(0,0,0,0.8)',
