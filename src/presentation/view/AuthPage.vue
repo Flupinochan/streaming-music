@@ -1,51 +1,28 @@
 <template>
-  <v-card max-width="520">
-    <v-card-title>Sign in</v-card-title>
-    <v-card-text>
-      <!-- 認証エラー時のメッセージ表示 -->
-      <v-alert v-if="errorMessage" type="error" variant="tonal">
-        {{ errorMessage }}
-      </v-alert>
-
-      <!-- Email -->
-      <v-text-field
-        v-model="email"
-        label="Email"
-        type="email"
-        autocomplete="email"
-        :disabled="isLoading"
-      />
-
-      <!-- Password -->
-      <v-text-field
-        v-model="password"
-        label="Password"
-        type="password"
-        autocomplete="current-password"
-        :disabled="isLoading"
-      />
-
-      <v-btn
-        class="mb-4"
-        block
-        :loading="isLoading"
-        :disabled="isLoading || !email || !password"
-        @click="handleSignIn"
-      >
-        Sign in
-      </v-btn>
-
-      <!-- パスワード再設定が必要な場合 -->
-      <div v-if="requiresNewPassword">
-        <v-alert type="info" variant="tonal" class="mb-4">
-          New password is required.
+  <div class="flex-grow-1 d-flex align-center justify-center">
+    <v-card max-width="520">
+      <v-card-title>Sign in</v-card-title>
+      <v-card-text>
+        <!-- 認証エラー時のメッセージ表示 -->
+        <v-alert v-if="errorMessage" type="error" variant="tonal">
+          {{ errorMessage }}
         </v-alert>
 
+        <!-- Email -->
         <v-text-field
-          v-model="newPassword"
-          label="New password"
+          v-model="email"
+          label="Email"
+          type="email"
+          autocomplete="email"
+          :disabled="isLoading"
+        />
+
+        <!-- Password -->
+        <v-text-field
+          v-model="password"
+          label="Password"
           type="password"
-          autocomplete="new-password"
+          autocomplete="current-password"
           :disabled="isLoading"
         />
 
@@ -53,14 +30,39 @@
           class="mb-4"
           block
           :loading="isLoading"
-          :disabled="isLoading || !newPassword"
-          @click="handleConfirmNewPassword"
+          :disabled="isLoading || !email || !password"
+          @click="handleSignIn"
         >
-          Set new password
+          Sign in
         </v-btn>
-      </div>
-    </v-card-text>
-  </v-card>
+
+        <!-- パスワード再設定が必要な場合 -->
+        <div v-if="requiresNewPassword">
+          <v-alert type="info" variant="tonal" class="mb-4">
+            New password is required.
+          </v-alert>
+
+          <v-text-field
+            v-model="newPassword"
+            label="New password"
+            type="password"
+            autocomplete="new-password"
+            :disabled="isLoading"
+          />
+
+          <v-btn
+            class="mb-4"
+            block
+            :loading="isLoading"
+            :disabled="isLoading || !newPassword"
+            @click="handleConfirmNewPassword"
+          >
+            Set new password
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+  </div>
 </template>
 
 <script setup lang="ts">

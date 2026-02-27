@@ -196,6 +196,10 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     // playerState.value = { ...playerState.value, status: "stopped" };
   };
 
+  const getTrackById = (id: string): SubMusicMetadataViewDto | undefined => {
+    return tracks.value.find((t) => t.id === id);
+  };
+
   const selectTrackById = async (id: string): Promise<void> => {
     const track = tracks.value.find((t) => t.id === id);
     await selectTrack(track);
@@ -219,6 +223,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
       return;
     }
 
+    if (track.id === playerState.value.id) return;
+
     const idx = tracks.value.findIndex((t) => t.id === track.id);
     index = idx;
     if (tracks.value[index]) {
@@ -227,6 +233,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
 
     if (isPlaying()) {
       howl?.play();
+      // playing status already set, ensure tick timer is running again after engine
+      // was disposed during loadTrack.
+      startTick();
     }
 
     history = [];
@@ -312,6 +321,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     // 再生中なら新しい曲を再生
     if (playerState.value.status === "playing") {
       howl?.play();
+      startTick();
     }
 
     // 選択中の曲を更新
@@ -341,6 +351,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     // 再生中なら新しい曲を再生
     if (playerState.value.status === "playing") {
       howl?.play();
+      startTick();
     }
 
     // 選択中の曲を更新
@@ -464,5 +475,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     currentPositionLabel,
     remainDurationLabel,
     selectTrackById,
+    getTrackById,
   };
 });

@@ -1,210 +1,93 @@
 <template>
-  <v-img
-    :src="musicPlayerStore.playerState.artworkUrl"
-    style="view-transition-name: artwork"
-    class="overlay"
-    @click="handleImageClick()"
-  />
-
-  <!-- 再生位置 -->
-  <v-container fluid>
-    <v-row align="center" class="ga-2">
-      <v-col cols="auto">
-        <p class="text-caption">
-          {{ musicPlayerStore.currentPositionLabel() }}
-        </p>
-      </v-col>
-      <v-col>
-        <v-slider
-          track-color="on-surface"
-          v-model="sliderSeconds"
-          :min="0"
-          :max="Math.max(0, musicPlayerStore.playerState.musicDurationSeconds)"
-          :step="1"
-          :disabled="!musicPlayerStore.canPlaying()"
-          hide-details
-        />
-      </v-col>
-      <v-col cols="auto">
-        <p class="text-caption">
-          {{ musicPlayerStore.remainDurationLabel() }}
-        </p>
-      </v-col>
-    </v-row>
-  </v-container>
-
-  <v-container class="d-flex justify-center align-center" fluid>
-    <v-row justify="center" class="play-button-padding">
-      <!-- リピート -->
-      <v-col cols="auto">
-        <!-- none -->
-        <v-btn
-          v-if="musicPlayerStore.playerState.repeatMode === 'none'"
-          :size="btnSize"
-          icon="$mdiRepeat"
-          color="on-surface"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-        <!-- all -->
-        <v-btn
-          v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
-          :size="btnSize"
-          icon="$mdiRepeat"
-          color="primary"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-        <!-- one -->
-        <v-btn
-          v-else
-          :size="btnSize"
-          icon="$mdiRepeatOnce"
-          color="primary"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-      </v-col>
-
-      <!-- 前へ -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiSkipPrevious"
-          variant="text"
-          :disabled="!musicPlayerStore.canPrevious()"
-          @click="musicPlayerStore.previous()"
-        ></v-btn>
-      </v-col>
-
-      <!-- 再生/一時停止 -->
-      <v-col cols="auto">
-        <!-- 一時停止 -->
-        <v-btn
-          v-if="musicPlayerStore.isPlaying()"
-          :size="btnSize"
-          icon="$mdiPause"
-          variant="tonal"
-          @click="musicPlayerStore.pause()"
-        >
-        </v-btn>
-        <!-- 再生 -->
-        <v-btn
-          v-else
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiPlay"
-          variant="tonal"
-          :disabled="!musicPlayerStore.canPlaying()"
-          @click="musicPlayerStore.play()"
-        >
-        </v-btn>
-      </v-col>
-
-      <!-- 次へ -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiSkipNext"
-          variant="text"
-          :disabled="!musicPlayerStore.canNext()"
-          @click="musicPlayerStore.next()"
-        ></v-btn>
-      </v-col>
-
-      <!-- シャッフル -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          icon="$mdiShuffleVariant"
-          :color="
-            musicPlayerStore.playerState.shuffleEnabled
-              ? 'primary'
-              : 'on-surface'
-          "
-          variant="text"
-          @click="musicPlayerStore.toggleShuffle()"
-        >
-        </v-btn>
-      </v-col>
-    </v-row>
+  <v-container
+    fluid
+    class="pa-0 ma-0 relative-container"
+    :style="{
+      backgroundImage: `url(${musicPlayerStore.playerState.artworkUrl})`,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      backgroundSize: 'cover',
+      backgroundBlendMode: 'darken',
+    }"
+  >
+    <div class="glass-overlay"></div>
+    <v-img
+      :src="musicPlayerStore.playerState.artworkUrl"
+      style="view-transition-name: artwork"
+      class="clickable"
+      contain
+      @click="handleImageClick()"
+    />
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { useResponsiveButton } from "@/presentation/composables/useResponsiveButton";
-import {
-  useMusicPlayerStore,
-  type SubMusicMetadataViewDto,
-} from "@/presentation/stores/useMusicPlayerStore";
+import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import type { DetailProps } from "@/router";
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import { useRouter } from "vue-router";
 
 const props = defineProps<DetailProps>();
 
-const { btnSize } = useResponsiveButton();
 const musicPlayerStore = useMusicPlayerStore();
 const router = useRouter();
 
 watch(
-  () => [musicPlayerStore.playerState, musicPlayerStore.tracks] as const,
-  ([state, tracks]) => {
-    if (tracks.length === 0) return;
-
-    if (state.id !== props.musicId) {
-      musicPlayerStore.selectTrackById(props.musicId);
+  () => props.musicId,
+  async (newId) => {
+    if (!newId) return;
+    if (newId !== musicPlayerStore.playerState.id) {
+      await musicPlayerStore.selectTrackById(newId);
     }
   },
-  { immediate: true, deep: true },
+  { immediate: true },
+);
+
+watch(
+  () => musicPlayerStore.playerState.id,
+  (id) => {
+    if (!id) return;
+    if (id !== props.musicId) {
+      router.replace({ name: "detail", params: { id } });
+    }
+  },
+);
+
+watch(
+  () => musicPlayerStore.tracks,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  (_tracks) => {
+    const id = props.musicId;
+    if (id && !musicPlayerStore.playerState.id) {
+      musicPlayerStore.selectTrackById(id);
+    }
+  },
+  { immediate: true },
 );
 
 const handleImageClick = (): void => {
   router.push({ name: "home" });
-};
-
-const sliderSeconds = computed<number>({
-  get: () => musicPlayerStore.playerState.positionSeconds,
-  set: (v) => {
-    musicPlayerStore.seek(v);
-  },
-});
-
-const toggleRepeat = (): void => {
-  const current = musicPlayerStore.playerState.repeatMode;
-  const next = current === "none" ? "one" : current === "one" ? "all" : "none";
-  musicPlayerStore.setRepeatMode(next);
-};
-
-const selectedIds = computed<string[]>({
-  get() {
-    const id = musicPlayerStore.playerState.id;
-    return id ? [id] : [];
-  },
-  set(ids) {
-    // 選択変更時に呼ばれる
-    const id = ids[0];
-    const track = musicPlayerStore.tracks.find((t) => t.id === id);
-    musicPlayerStore.selectTrack(track);
-  },
-});
-
-const formatTitle = (music: SubMusicMetadataViewDto): string => {
-  return (
-    music.title +
-    " - " +
-    Math.floor(music.musicDurationSeconds / 60) +
-    "分 " +
-    (music.musicDataBytes / 1024 / 1024).toFixed(1) +
-    "MB"
-  );
 };
 </script>
 
 <style scoped>
 .play-button-padding {
   gap: clamp(0.5rem, 0.185rem + 1.34vw, 2rem);
+}
+.clickable {
+  cursor: pointer;
+}
+.relative-container {
+  position: relative;
+}
+
+.glass-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
 }
 </style>

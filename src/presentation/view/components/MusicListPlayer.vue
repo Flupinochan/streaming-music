@@ -1,168 +1,43 @@
 <template>
-  <v-list
-    v-if="musicPlayerStore.tracks.length > 0"
-    select-strategy="single-independent"
-    v-model:selected="selectedIds"
-    :disabled="musicStore.loading"
-  >
-    <v-list-item
-      v-for="music in musicPlayerStore.tracks"
-      :key="music.id"
-      :value="music.id"
-      color="primary"
+  <div style="overflow-y: auto">
+    <v-list
+      v-if="musicPlayerStore.tracks.length > 0"
+      select-strategy="single-independent"
+      v-model:selected="selectedIds"
+      :disabled="musicStore.loading"
     >
-      <template #prepend>
-        <v-img
-          :src="music.artworkThumbnailUrl"
-          style="view-transition-name: artwork"
-          class="me-2"
-          width="48"
-          height="48"
-          aspect-ratio="1"
-          cover
-          rounded="sm"
-          @click="handleImageClick()"
-        >
-          <template #placeholder>
-            <v-skeleton-loader type="image" width="48" height="48" />
-          </template>
-        </v-img>
-      </template>
-      <v-list-item-title>
-        {{ formatTitle(music) }}
-      </v-list-item-title>
-    </v-list-item>
-  </v-list>
-
-  <!-- 再生位置 -->
-  <v-container fluid>
-    <v-row align="center" class="ga-2">
-      <v-col cols="auto">
-        <p class="text-caption">
-          {{ musicPlayerStore.currentPositionLabel() }}
-        </p>
-      </v-col>
-      <v-col>
-        <v-slider
-          track-color="on-surface"
-          v-model="sliderSeconds"
-          :min="0"
-          :max="Math.max(0, musicPlayerStore.playerState.musicDurationSeconds)"
-          :step="1"
-          :disabled="!musicPlayerStore.canPlaying()"
-          hide-details
-        />
-      </v-col>
-      <v-col cols="auto">
-        <p class="text-caption">
-          {{ musicPlayerStore.remainDurationLabel() }}
-        </p>
-      </v-col>
-    </v-row>
-  </v-container>
-
-  <v-container class="d-flex justify-center align-center" fluid>
-    <v-row justify="center" class="play-button-padding">
-      <!-- リピート -->
-      <v-col cols="auto">
-        <!-- none -->
-        <v-btn
-          v-if="musicPlayerStore.playerState.repeatMode === 'none'"
-          :size="btnSize"
-          icon="$mdiRepeat"
-          color="on-surface"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-        <!-- all -->
-        <v-btn
-          v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
-          :size="btnSize"
-          icon="$mdiRepeat"
-          color="primary"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-        <!-- one -->
-        <v-btn
-          v-else
-          :size="btnSize"
-          icon="$mdiRepeatOnce"
-          color="primary"
-          variant="text"
-          @click="toggleRepeat()"
-        />
-      </v-col>
-
-      <!-- 前へ -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiSkipPrevious"
-          variant="text"
-          :disabled="!musicPlayerStore.canPrevious()"
-          @click="musicPlayerStore.previous()"
-        ></v-btn>
-      </v-col>
-
-      <!-- 再生/一時停止 -->
-      <v-col cols="auto">
-        <!-- 一時停止 -->
-        <v-btn
-          v-if="musicPlayerStore.isPlaying()"
-          :size="btnSize"
-          icon="$mdiPause"
-          variant="tonal"
-          @click="musicPlayerStore.pause()"
-        >
-        </v-btn>
-        <!-- 再生 -->
-        <v-btn
-          v-else
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiPlay"
-          variant="tonal"
-          :disabled="!musicPlayerStore.canPlaying()"
-          @click="musicPlayerStore.play()"
-        >
-        </v-btn>
-      </v-col>
-
-      <!-- 次へ -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          color="on-surface"
-          icon="$mdiSkipNext"
-          variant="text"
-          :disabled="!musicPlayerStore.canNext()"
-          @click="musicPlayerStore.next()"
-        ></v-btn>
-      </v-col>
-
-      <!-- シャッフル -->
-      <v-col cols="auto">
-        <v-btn
-          :size="btnSize"
-          icon="$mdiShuffleVariant"
-          :color="
-            musicPlayerStore.playerState.shuffleEnabled
-              ? 'primary'
-              : 'on-surface'
-          "
-          variant="text"
-          @click="musicPlayerStore.toggleShuffle()"
-        >
-        </v-btn>
-      </v-col>
-    </v-row>
-  </v-container>
+      <v-list-item
+        v-for="music in musicPlayerStore.tracks"
+        :key="music.id"
+        :value="music.id"
+        color="primary"
+      >
+        <template #prepend>
+          <v-img
+            :src="music.artworkThumbnailUrl"
+            style="view-transition-name: artwork"
+            class="me-2"
+            width="48"
+            height="48"
+            aspect-ratio="1"
+            cover
+            rounded="sm"
+            @click="handleImageClick(music)"
+          >
+            <template #placeholder>
+              <v-skeleton-loader type="image" width="48" height="48" />
+            </template>
+          </v-img>
+        </template>
+        <v-list-item-title>
+          {{ formatTitle(music) }}
+        </v-list-item-title>
+      </v-list-item>
+    </v-list>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useResponsiveButton } from "@/presentation/composables/useResponsiveButton";
 import {
   useMusicPlayerStore,
   type SubMusicMetadataViewDto,
@@ -171,30 +46,20 @@ import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
-const { btnSize } = useResponsiveButton();
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
 const router = useRouter();
 
-const handleImageClick = (): void => {
-  if (!musicPlayerStore.playerState.id) return;
+const handleImageClick = async (
+  music: SubMusicMetadataViewDto,
+): Promise<void> => {
+  console.log("clicked image for music", music.title);
+  await musicPlayerStore.selectTrack(music);
+
   router.push({
     name: "detail",
-    params: { id: musicPlayerStore.playerState.id },
+    params: { id: music.id },
   });
-};
-
-const sliderSeconds = computed<number>({
-  get: () => musicPlayerStore.playerState.positionSeconds,
-  set: (v) => {
-    musicPlayerStore.seek(v);
-  },
-});
-
-const toggleRepeat = (): void => {
-  const current = musicPlayerStore.playerState.repeatMode;
-  const next = current === "none" ? "one" : current === "one" ? "all" : "none";
-  musicPlayerStore.setRepeatMode(next);
 };
 
 const selectedIds = computed<string[]>({

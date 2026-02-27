@@ -1,36 +1,40 @@
 <template>
-  <MusicListPlayer />
+  <div class="flex-grow-1 d-flex flex-column">
+    <MusicListPlayer />
 
-  <v-file-input
-    label="Music file input"
-    accept="audio/*"
-    variant="solo"
-    prepend-icon="$fileImage"
-    show-size
-    @change="onFileSelected"
-  />
-  <v-file-input
-    label="Artwork image file input"
-    accept="image/*"
-    variant="solo"
-    prepend-icon="$fileImage"
-    show-size
-    @change="onArtworkSelected"
-  />
-  <v-btn
-    :disabled="!selectedMusicFile || !selectedArtworkFile || musicStore.loading"
-    :loading="musicStore.loading"
-    @click="handleUpload"
-  >
-    アップロード
-  </v-btn>
-  <v-btn
-    :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
-    :loading="musicStore.loading"
-    @click="handleDelete"
-  >
-    削除
-  </v-btn>
+    <v-file-input
+      label="Music file input"
+      accept="audio/*"
+      variant="solo"
+      prepend-icon="$fileImage"
+      show-size
+      @change="onFileSelected"
+    />
+    <v-file-input
+      label="Artwork image file input"
+      accept="image/*"
+      variant="solo"
+      prepend-icon="$fileImage"
+      show-size
+      @change="onArtworkSelected"
+    />
+    <v-btn
+      :disabled="
+        !selectedMusicFile || !selectedArtworkFile || musicStore.loading
+      "
+      :loading="musicStore.loading"
+      @click="handleUpload"
+    >
+      アップロード
+    </v-btn>
+    <v-btn
+      :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
+      :loading="musicStore.loading"
+      @click="handleDelete"
+    >
+      削除
+    </v-btn>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -106,17 +110,16 @@ const handleUpload = async (): Promise<void> => {
 };
 
 const handleDelete = async (): Promise<void> => {
-  if (
-    !musicPlayerStore.playerState.id ||
-    !musicPlayerStore.playerState.musicS3Path ||
-    !musicPlayerStore.playerState.artworkS3Path
-  )
-    return;
+  if (!musicPlayerStore.playerState.id) return;
+
+  const music = musicPlayerStore.getTrackById(musicPlayerStore.playerState.id);
+  if (!music) return;
 
   await musicStore.removeMusic({
-    id: musicPlayerStore.playerState.id,
-    musicDataPath: musicPlayerStore.playerState.musicS3Path,
-    artworkImagePath: musicPlayerStore.playerState.artworkS3Path,
+    id: music?.id,
+    musicDataPath: music?.musicS3Path,
+    artworkImagePath: music?.artworkS3Path,
+    artworkThumbnailImagePath: music?.artworkThumbnailS3Path,
   });
 };
 

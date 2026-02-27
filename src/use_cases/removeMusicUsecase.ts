@@ -10,12 +10,13 @@ export class RemoveMusicUsecase {
   ) {}
 
   async removeMusic(input: RemoveMusicDto): Promise<void> {
-    const { id, musicDataPath, artworkImagePath } =
+    const { id, musicDataPath, artworkImagePath, artworkThumbnailImagePath } =
       removeMusicDtoToRemoveMusicInput(input);
 
     await Promise.all([
       this.musicDataRepository.remove(musicDataPath),
       this.musicDataRepository.remove(artworkImagePath),
+      this.musicDataRepository.remove(artworkThumbnailImagePath),
       this.musicMetadataRepository.removeMusicMetadata(id),
     ]);
   }

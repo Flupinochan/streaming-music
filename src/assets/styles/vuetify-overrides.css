@@ -2,3 +2,9 @@
 .v-row > .v-col {
   padding: 0 !important;
 }
+
+/* height固定の影響のためか
+スクロールできないのにスクロールバーが表示されるためhiddenで非表示にする */
+html {
+  overflow: hidden;
+}

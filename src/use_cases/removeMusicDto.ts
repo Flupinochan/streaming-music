@@ -3,5 +3,6 @@ export class RemoveMusicDto {
     public readonly id: string,
     public readonly musicDataPath: string,
     public readonly artworkImagePath: string,
+    public readonly artworkThumbnailImagePath: string,
   ) {}
 }
