@@ -8,6 +8,7 @@
       backgroundSize: 'cover',
       backgroundPosition: 'center center',
       backgroundBlendMode: 'darken',
+      height: '100dvh',
     }"
   >
     <div class="glass-overlay"></div>
