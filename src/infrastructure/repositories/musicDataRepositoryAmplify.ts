@@ -15,10 +15,16 @@ export class MusicDataRepositoryAmplify {
       type: input.musicData.contentType,
     });
 
+    // 同一ファイル名の場合はキャッシュされているため注意
+    // データ更新時は必ず別ファイル名にすること
+    // 日付をつけるなどして、同じファイル名で上書きしないようにすること
     await uploadData({
       data: blob,
       path: input.musicDataPath,
-      options: { contentType: input.musicData.contentType },
+      options: {
+        contentType: input.musicData.contentType,
+        cacheControl: "public, max-age=31536000, immutable",
+      },
     }).result;
   }
 
@@ -30,7 +36,10 @@ export class MusicDataRepositoryAmplify {
     await uploadData({
       data: blob,
       path: input.artworkImagePath,
-      options: { contentType: input.artworkImage.contentType },
+      options: {
+        contentType: input.artworkImage.contentType,
+        cacheControl: "public, max-age=31536000, immutable",
+      },
     }).result;
   }
 
