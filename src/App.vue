@@ -1,8 +1,9 @@
 <template>
+  <!-- vhではなくスマホのURLバーを考慮したdvhを利用する -->
   <v-app>
     <keep-alive include="Home,Detail">
-      <v-main class="d-flex flex-column" style="height: 100vh">
-        <router-view class="h-100" style="min-height: 0" />
+      <v-main class="d-flex flex-column" style="height: 100dvh">
+        <router-view style="min-height: 0" />
       </v-main>
     </keep-alive>
 

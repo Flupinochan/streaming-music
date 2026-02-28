@@ -94,12 +94,10 @@ const handleImageClick = (): void => {
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.1);
   pointer-events: none;
-  z-index: 0;
 }
 
 .clickable {
   cursor: pointer;
-  z-index: 1;
 }
 
 .title-overlay {
@@ -109,6 +107,5 @@ const handleImageClick = (): void => {
   font-size: clamp(1rem, 0.8rem + 1vw, 2rem);
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
   pointer-events: none;
-  z-index: 2;
 }
 </style>
