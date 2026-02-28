@@ -15,6 +15,7 @@
         <template #prepend>
           <v-img
             :src="music.artworkThumbnailUrl"
+            :alt="music.title"
             style="view-transition-name: artwork"
             class="me-2"
             width="48"
@@ -22,6 +23,8 @@
             aspect-ratio="1"
             cover
             rounded="sm"
+            :aria-label="`アートワーク${music.title}を表示する`"
+            role="button"
             @click="handleImageClick(music)"
           >
             <template #placeholder>
@@ -29,7 +32,9 @@
             </template>
           </v-img>
         </template>
-        <v-list-item-title>
+        <v-list-item-title
+          :aria-label="`曲名は${music.title}、再生時間は${Math.floor(music.musicDurationSeconds / 60)}分`"
+        >
           {{ formatTitle(music) }}
         </v-list-item-title>
       </v-list-item>

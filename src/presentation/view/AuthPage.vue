@@ -28,6 +28,7 @@
 
         <v-btn
           class="mb-4"
+          aria-label="サインイン"
           block
           :loading="isLoading"
           :disabled="isLoading || !email || !password"
@@ -53,6 +54,7 @@
           <v-btn
             class="mb-4"
             block
+            aria-label="新しいパスワードを設定"
             :loading="isLoading"
             :disabled="isLoading || !newPassword"
             @click="handleConfirmNewPassword"

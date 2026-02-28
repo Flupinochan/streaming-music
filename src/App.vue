@@ -23,4 +23,16 @@ onMounted(() => {
 });
 </script>
 
-<style scoped></style>
+<!-- グローバルCSS定義 -->
+<style>
+/* 全ての v-row 内 v-col のpaddingを0で初期化 */
+.v-row > .v-col {
+  padding: 0 !important;
+}
+
+/* height固定の影響のためか
+スクロールできないのにスクロールバーが表示されるためhiddenで非表示にする */
+html {
+  overflow: hidden;
+}
+</style>

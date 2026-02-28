@@ -10,6 +10,7 @@
         </v-col>
         <v-col>
           <v-slider
+            aria-label="再生位置シークバーを操作する"
             track-color="on-surface"
             v-model="sliderSeconds"
             :min="0"
@@ -36,6 +37,7 @@
           <!-- none -->
           <v-btn
             v-if="musicPlayerStore.playerState.repeatMode === 'none'"
+            aria-label="全曲リピートモードを有効にする"
             :size="btnSize"
             icon="$mdiRepeat"
             color="on-surface"
@@ -45,6 +47,7 @@
           <!-- all -->
           <v-btn
             v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
+            aria-label="1曲リピートモードを有効にする"
             :size="btnSize"
             icon="$mdiRepeat"
             color="primary"
@@ -54,6 +57,7 @@
           <!-- one -->
           <v-btn
             v-else
+            aria-label="リピートモードを無効にする"
             :size="btnSize"
             icon="$mdiRepeatOnce"
             color="primary"
@@ -68,6 +72,7 @@
             :size="btnSize"
             color="on-surface"
             icon="$mdiSkipPrevious"
+            aria-label="前の曲へ戻る"
             variant="text"
             :disabled="!musicPlayerStore.canPrevious()"
             @click="musicPlayerStore.previous()"
@@ -81,6 +86,7 @@
             v-if="musicPlayerStore.isPlaying()"
             :size="btnSize"
             icon="$mdiPause"
+            aria-label="一時停止する"
             variant="tonal"
             @click="musicPlayerStore.pause()"
           >
@@ -88,6 +94,7 @@
           <!-- 再生 -->
           <v-btn
             v-else
+            aria-label="再生する"
             :size="btnSize"
             color="on-surface"
             icon="$mdiPlay"
@@ -104,6 +111,7 @@
             :size="btnSize"
             color="on-surface"
             icon="$mdiSkipNext"
+            aria-label="次の曲へスキップする"
             variant="text"
             :disabled="!musicPlayerStore.canNext()"
             @click="musicPlayerStore.next()"
@@ -113,6 +121,7 @@
         <!-- シャッフル -->
         <v-col cols="auto">
           <v-btn
+            aria-label="シャッフルモードを切り替える"
             :size="btnSize"
             icon="$mdiShuffleVariant"
             :color="
@@ -164,7 +173,7 @@ onMounted(() => {
           (): Promise<SubMusicMetadataDto | undefined> =>
             musicPlayerStore.next(),
         ],
-        ["stop", (): void => musicPlayerStore.pause()],
+        ["stop", (): void => musicPlayerStore.stop()],
         [
           "seekto",
           (...args: unknown[]): void => {

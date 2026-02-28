@@ -23,6 +23,7 @@
         !selectedMusicFile || !selectedArtworkFile || musicStore.loading
       "
       :loading="musicStore.loading"
+      aria-label="音楽ファイルをアップロード"
       @click="handleUpload"
     >
       アップロード
@@ -30,6 +31,7 @@
     <v-btn
       :disabled="!musicPlayerStore.playerState.id || musicStore.loading"
       :loading="musicStore.loading"
+      aria-label="音楽ファイルを削除"
       @click="handleDelete"
     >
       削除

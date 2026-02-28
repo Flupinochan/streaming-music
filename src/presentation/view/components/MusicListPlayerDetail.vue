@@ -14,6 +14,7 @@
     <div class="glass-overlay"></div>
     <v-img
       :src="musicPlayerStore.playerState.artworkUrl"
+      :alt="musicPlayerStore.playerState.title"
       style="view-transition-name: artwork"
       class="clickable"
       contain
