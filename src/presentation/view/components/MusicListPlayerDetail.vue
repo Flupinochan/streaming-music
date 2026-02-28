@@ -80,9 +80,6 @@ const handleImageClick = (): void => {
 </script>
 
 <style scoped>
-.play-button-padding {
-  gap: clamp(0.5rem, 0.185rem + 1.34vw, 2rem);
-}
 .relative-container {
   position: relative;
 }
