@@ -40,7 +40,7 @@
             icon="$mdiRepeat"
             color="on-surface"
             variant="text"
-            @click="toggleRepeat()"
+            @click="musicPlayerStore.toggleRepeatMode()"
           />
           <!-- all -->
           <v-btn
@@ -49,7 +49,7 @@
             icon="$mdiRepeat"
             color="primary"
             variant="text"
-            @click="toggleRepeat()"
+            @click="musicPlayerStore.toggleRepeatMode()"
           />
           <!-- one -->
           <v-btn
@@ -58,7 +58,7 @@
             icon="$mdiRepeatOnce"
             color="primary"
             variant="text"
-            @click="toggleRepeat()"
+            @click="musicPlayerStore.toggleRepeatMode()"
           />
         </v-col>
 
@@ -133,7 +133,8 @@
 <script setup lang="ts">
 import { useResponsiveButton } from "@/presentation/composables/useResponsiveButton";
 import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
-import { computed } from "vue";
+import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
+import { computed, onMounted, watch } from "vue";
 
 const { btnSize } = useResponsiveButton();
 const musicPlayerStore = useMusicPlayerStore();
@@ -145,11 +146,87 @@ const sliderSeconds = computed<number>({
   },
 });
 
-const toggleRepeat = (): void => {
-  const current = musicPlayerStore.playerState.repeatMode;
-  const next = current === "none" ? "one" : current === "one" ? "all" : "none";
-  musicPlayerStore.setRepeatMode(next);
+onMounted(() => {
+  if ("mediaSession" in navigator) {
+    const actionHandlers: [MediaSessionAction, (...args: unknown[]) => void][] =
+      [
+        ["play", (): void => musicPlayerStore.play()],
+        ["pause", (): void => musicPlayerStore.pause()],
+        ["seekforward", (): void => musicPlayerStore.nextSeek()],
+        ["seekbackward", (): void => musicPlayerStore.previousSeek()],
+        [
+          "previoustrack",
+          (): Promise<SubMusicMetadataDto | undefined> =>
+            musicPlayerStore.previous(),
+        ],
+        [
+          "nexttrack",
+          (): Promise<SubMusicMetadataDto | undefined> =>
+            musicPlayerStore.next(),
+        ],
+        ["stop", (): void => musicPlayerStore.pause()],
+        [
+          "seekto",
+          (...args: unknown[]): void => {
+            const details = args[0] as { seekTime?: number } | undefined;
+            if (details?.seekTime !== undefined) {
+              musicPlayerStore.seek(details.seekTime);
+            }
+          },
+        ],
+      ];
+
+    for (const [action, handler] of actionHandlers) {
+      try {
+        navigator.mediaSession.setActionHandler(
+          action,
+          handler as unknown as () => void,
+        );
+      } catch {}
+    }
+  }
+});
+
+const updateMediaSessionPosition = (): void => {
+  if (!("mediaSession" in navigator)) return;
+  if ("setPositionState" in navigator.mediaSession) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: musicPlayerStore.playerState.musicDurationSeconds,
+        position: musicPlayerStore.playerState.positionSeconds,
+        playbackRate: 1.0,
+      });
+    } catch {}
+  }
 };
+
+watch(
+  () => musicPlayerStore.playerState,
+  (state) => {
+    if (!("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: state.title ?? "",
+      artwork: state.artworkUrl
+        ? [
+            {
+              src: state.artworkUrl,
+            },
+          ]
+        : undefined,
+    });
+
+    navigator.mediaSession.playbackState =
+      state.status === "playing"
+        ? "playing"
+        : state.status === "paused"
+          ? "paused"
+          : "none";
+
+    updateMediaSessionPosition();
+  },
+  { deep: true, immediate: true },
+);
 </script>
 
 <style scoped>

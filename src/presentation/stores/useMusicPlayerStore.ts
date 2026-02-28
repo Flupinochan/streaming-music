@@ -278,8 +278,11 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     setSeek(0);
   };
 
-  const setRepeatMode = (mode: RepeatMode): void => {
-    playerState.value = { ...playerState.value, repeatMode: mode };
+  const toggleRepeatMode = (): void => {
+    const currentMode = playerState.value.repeatMode;
+    const nextMode: RepeatMode =
+      currentMode === "none" ? "one" : currentMode === "one" ? "all" : "none";
+    playerState.value = { ...playerState.value, repeatMode: nextMode };
   };
 
   const toggleShuffle = (): void => {
@@ -292,6 +295,18 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     if (!currentShuffleEnabled) {
       history = [];
     }
+  };
+
+  const nextSeek = (): void => {
+    if (!howl) return;
+    const current = howl.seek() as number;
+    setSeek(current + 10);
+  };
+
+  const previousSeek = (): void => {
+    if (!howl) return;
+    const current = howl.seek() as number;
+    setSeek(current - 10);
   };
 
   const next = async (): Promise<SubMusicMetadataViewDto | undefined> => {
@@ -463,12 +478,14 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     pause,
     stop,
     seek: setSeek,
-    setRepeatMode,
+    toggleRepeatMode,
     toggleShuffle,
     isPlaying,
     canPlaying,
     canNext,
     canPrevious,
+    nextSeek,
+    previousSeek,
     next,
     previous,
     totalDurationLabel,
