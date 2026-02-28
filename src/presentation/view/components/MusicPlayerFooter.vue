@@ -30,109 +30,135 @@
       </v-row>
     </v-container>
 
-    <v-container class="d-flex justify-center align-center mb-4" fluid>
-      <v-row justify="center" class="play-button-padding">
-        <!-- リピート -->
+    <v-container class="d-flex align-center mb-4" fluid>
+      <v-row align="center" class="no-gutters" style="width: 100%">
+        <!-- artwork on left edge -->
         <v-col cols="auto">
-          <!-- none -->
-          <v-btn
-            v-if="musicPlayerStore.playerState.repeatMode === 'none'"
-            aria-label="全曲リピートモードを有効にする"
-            :size="btnSize"
-            icon="$mdiRepeat"
-            color="on-surface"
-            variant="text"
-            @click="musicPlayerStore.toggleRepeatMode()"
-          />
-          <!-- all -->
-          <v-btn
-            v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
-            aria-label="1曲リピートモードを有効にする"
-            :size="btnSize"
-            icon="$mdiRepeat"
-            color="primary"
-            variant="text"
-            @click="musicPlayerStore.toggleRepeatMode()"
-          />
-          <!-- one -->
-          <v-btn
-            v-else
-            aria-label="リピートモードを無効にする"
-            :size="btnSize"
-            icon="$mdiRepeatOnce"
-            color="primary"
-            variant="text"
-            @click="musicPlayerStore.toggleRepeatMode()"
-          />
-        </v-col>
-
-        <!-- 前へ -->
-        <v-col cols="auto">
-          <v-btn
-            :size="btnSize"
-            color="on-surface"
-            icon="$mdiSkipPrevious"
-            aria-label="前の曲へ戻る"
-            variant="text"
-            :disabled="!musicPlayerStore.canPrevious()"
-            @click="musicPlayerStore.previous()"
-          ></v-btn>
-        </v-col>
-
-        <!-- 再生/一時停止 -->
-        <v-col cols="auto">
-          <!-- 一時停止 -->
-          <v-btn
-            v-if="musicPlayerStore.isPlaying()"
-            :size="btnSize"
-            icon="$mdiPause"
-            aria-label="一時停止する"
-            variant="tonal"
-            @click="musicPlayerStore.pause()"
+          <v-img
+            v-if="musicPlayerStore.playerState.artworkThumbnailUrl"
+            :src="musicPlayerStore.playerState.artworkThumbnailUrl"
+            :alt="musicPlayerStore.playerState.title || ''"
+            width="48"
+            height="48"
+            aspect-ratio="1"
+            cover
+            rounded="sm"
+            class="me-2 clickable"
+            :aria-label="`アートワーク${musicPlayerStore.playerState.title}を表示する`"
+            role="button"
+            @click="handleFooterImageClick()"
           >
-          </v-btn>
-          <!-- 再生 -->
-          <v-btn
-            v-else
-            aria-label="再生する"
-            :size="btnSize"
-            color="on-surface"
-            icon="$mdiPlay"
-            variant="tonal"
-            :disabled="!musicPlayerStore.canPlaying()"
-            @click="musicPlayerStore.play()"
-          >
-          </v-btn>
+            <template #placeholder>
+              <v-skeleton-loader type="image" width="48" height="48" />
+            </template>
+          </v-img>
         </v-col>
 
-        <!-- 次へ -->
-        <v-col cols="auto">
-          <v-btn
-            :size="btnSize"
-            color="on-surface"
-            icon="$mdiSkipNext"
-            aria-label="次の曲へスキップする"
-            variant="text"
-            :disabled="!musicPlayerStore.canNext()"
-            @click="musicPlayerStore.next()"
-          ></v-btn>
-        </v-col>
+        <v-col>
+          <v-row justify="center" class="play-button-padding">
+            <!-- リピート -->
+            <v-col cols="auto">
+              <!-- none -->
+              <v-btn
+                v-if="musicPlayerStore.playerState.repeatMode === 'none'"
+                aria-label="全曲リピートモードを有効にする"
+                :size="btnSize"
+                icon="$mdiRepeat"
+                color="on-surface"
+                variant="text"
+                @click="musicPlayerStore.toggleRepeatMode()"
+              />
+              <!-- all -->
+              <v-btn
+                v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
+                aria-label="1曲リピートモードを有効にする"
+                :size="btnSize"
+                icon="$mdiRepeat"
+                color="primary"
+                variant="text"
+                @click="musicPlayerStore.toggleRepeatMode()"
+              />
+              <!-- one -->
+              <v-btn
+                v-else
+                aria-label="リピートモードを無効にする"
+                :size="btnSize"
+                icon="$mdiRepeatOnce"
+                color="primary"
+                variant="text"
+                @click="musicPlayerStore.toggleRepeatMode()"
+              />
+            </v-col>
 
-        <!-- シャッフル -->
-        <v-col cols="auto">
-          <v-btn
-            aria-label="シャッフルモードを切り替える"
-            :size="btnSize"
-            icon="$mdiShuffleVariant"
-            :color="
-              musicPlayerStore.playerState.shuffleEnabled
-                ? 'primary'
-                : 'on-surface'
-            "
-            variant="text"
-            @click="musicPlayerStore.toggleShuffle()"
-          >
-          </v-btn>
+            <!-- 前へ -->
+            <v-col cols="auto">
+              <v-btn
+                :size="btnSize"
+                color="on-surface"
+                icon="$mdiSkipPrevious"
+                aria-label="前の曲へ戻る"
+                variant="text"
+                :disabled="!musicPlayerStore.canPrevious()"
+                @click="musicPlayerStore.previous()"
+              ></v-btn>
+            </v-col>
+
+            <!-- 再生/一時停止 -->
+            <v-col cols="auto">
+              <!-- 一時停止 -->
+              <v-btn
+                v-if="musicPlayerStore.isPlaying()"
+                :size="btnSize"
+                icon="$mdiPause"
+                aria-label="一時停止する"
+                variant="tonal"
+                @click="musicPlayerStore.pause()"
+              >
+              </v-btn>
+              <!-- 再生 -->
+              <v-btn
+                v-else
+                aria-label="再生する"
+                :size="btnSize"
+                color="on-surface"
+                icon="$mdiPlay"
+                variant="tonal"
+                :disabled="!musicPlayerStore.canPlaying()"
+                @click="musicPlayerStore.play()"
+              >
+              </v-btn>
+            </v-col>
+
+            <!-- 次へ -->
+            <v-col cols="auto">
+              <v-btn
+                :size="btnSize"
+                color="on-surface"
+                icon="$mdiSkipNext"
+                aria-label="次の曲へスキップする"
+                variant="text"
+                :disabled="!musicPlayerStore.canNext()"
+                @click="musicPlayerStore.next()"
+              ></v-btn>
+            </v-col>
+
+            <!-- シャッフル -->
+            <v-col cols="auto">
+              <v-btn
+                aria-label="シャッフルモードを切り替える"
+                :size="btnSize"
+                icon="$mdiShuffleVariant"
+                :color="
+                  musicPlayerStore.playerState.shuffleEnabled
+                    ? 'primary'
+                    : 'on-surface'
+                "
+                variant="text"
+                @click="musicPlayerStore.toggleShuffle()"
+              >
+              </v-btn>
+            </v-col>
+          </v-row>
         </v-col>
       </v-row>
     </v-container>
@@ -144,9 +170,11 @@ import { useResponsiveButton } from "@/presentation/composables/useResponsiveBut
 import { useMusicPlayerStore } from "@/presentation/stores/useMusicPlayerStore";
 import type { SubMusicMetadataDto } from "@/use_cases/subMusicMetadataDto";
 import { computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
 
 const { btnSize } = useResponsiveButton();
 const musicPlayerStore = useMusicPlayerStore();
+const router = useRouter();
 
 const sliderSeconds = computed<number>({
   get: () => musicPlayerStore.playerState.positionSeconds,
@@ -195,6 +223,13 @@ onMounted(() => {
     }
   }
 });
+
+const handleFooterImageClick = (): void => {
+  const id = musicPlayerStore.playerState.id;
+  if (id) {
+    router.push({ name: "detail", params: { id } });
+  }
+};
 
 const updateMediaSessionPosition = (): void => {
   if (!("mediaSession" in navigator)) return;

@@ -23,9 +23,6 @@
             aspect-ratio="1"
             cover
             rounded="sm"
-            :aria-label="`アートワーク${music.title}を表示する`"
-            role="button"
-            @click="handleImageClick(music)"
           >
             <template #placeholder>
               <v-skeleton-loader type="image" width="48" height="48" />
@@ -49,23 +46,9 @@ import {
 } from "@/presentation/stores/useMusicPlayerStore";
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 
 const musicStore = useMusicStore();
 const musicPlayerStore = useMusicPlayerStore();
-const router = useRouter();
-
-const handleImageClick = async (
-  music: SubMusicMetadataViewDto,
-): Promise<void> => {
-  console.log("clicked image for music", music.title);
-  await musicPlayerStore.selectTrack(music);
-
-  router.push({
-    name: "detail",
-    params: { id: music.id },
-  });
-};
 
 const selectedIds = computed<string[]>({
   get() {

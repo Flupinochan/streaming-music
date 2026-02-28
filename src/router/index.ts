@@ -5,7 +5,6 @@ import {
   createWebHistory,
   type RouteLocationNormalized,
 } from "vue-router";
-import GuestPage from "../presentation/view/GuestPage.vue";
 
 export type DetailProps = {
   musicId: string;
@@ -20,7 +19,8 @@ const routes = [
     name: "home",
     path: "/home",
     alias: ["/home"],
-    component: GuestPage,
+    component: (): Promise<{ default: Component }> =>
+      import("@/presentation/view/GuestPage.vue"),
   },
   {
     name: "detail",
