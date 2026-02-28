@@ -18,6 +18,13 @@
       contain
       @click="handleImageClick()"
     />
+
+    <div
+      v-if="musicPlayerStore.playerState.title"
+      class="title-overlay primary--text"
+    >
+      {{ musicPlayerStore.playerState.title }}
+    </div>
   </v-container>
 </template>
 
@@ -89,6 +96,15 @@ const handleImageClick = (): void => {
   left: 0;
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.title-overlay {
+  position: absolute;
+  bottom: clamp(0.5rem, 0.3rem + 1vw, 1.5rem);
+  left: clamp(0.5rem, 0.3rem + 1vw, 1.5rem);
+  font-size: clamp(1rem, 0.8rem + 1vw, 2rem);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
   pointer-events: none;
 }
 </style>
