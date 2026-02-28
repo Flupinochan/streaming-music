@@ -233,8 +233,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
 
     if (isPlaying()) {
       howl?.play();
-      // playing status already set, ensure tick timer is running again after engine
-      // was disposed during loadTrack.
       startTick();
     }
 
@@ -278,10 +276,11 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     setSeek(0);
   };
 
+  // none -> all -> one -> none
   const toggleRepeatMode = (): void => {
     const currentMode = playerState.value.repeatMode;
     const nextMode: RepeatMode =
-      currentMode === "none" ? "one" : currentMode === "one" ? "all" : "none";
+      currentMode === "none" ? "all" : currentMode === "all" ? "one" : "none";
     playerState.value = { ...playerState.value, repeatMode: nextMode };
   };
 
