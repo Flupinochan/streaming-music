@@ -81,9 +81,6 @@ const handleImageClick = (): void => {
 .play-button-padding {
   gap: clamp(0.5rem, 0.185rem + 1.34vw, 2rem);
 }
-.clickable {
-  cursor: pointer;
-}
 .relative-container {
   position: relative;
 }
@@ -97,6 +94,12 @@ const handleImageClick = (): void => {
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.1);
   pointer-events: none;
+  z-index: 0;
+}
+
+.clickable {
+  cursor: pointer;
+  z-index: 1;
 }
 
 .title-overlay {
@@ -106,5 +109,6 @@ const handleImageClick = (): void => {
   font-size: clamp(1rem, 0.8rem + 1vw, 2rem);
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
   pointer-events: none;
+  z-index: 2;
 }
 </style>
