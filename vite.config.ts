@@ -1,7 +1,6 @@
 import { fileURLToPath, URL } from "node:url";
 
 import vue from "@vitejs/plugin-vue";
-import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 import vuetify from "vite-plugin-vuetify";
 
@@ -9,13 +8,13 @@ export default defineConfig({
   plugins: [
     vue(),
     vuetify({ autoImport: true }),
-    visualizer({
-      template: "treemap",
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-      filename: "./tmp/stats.html",
-    }),
+    // visualizer({
+    //   template: "treemap",
+    //   open: true,
+    //   gzipSize: true,
+    //   brotliSize: true,
+    //   filename: "./tmp/stats.html",
+    // }),
     // viteCompression({
     //   algorithm: "brotliCompress",
     //   ext: ".br",
