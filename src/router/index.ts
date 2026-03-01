@@ -25,7 +25,7 @@ const routes = [
   {
     name: "detail",
     path: "/detail/:id",
-    alias: ["/detail"],
+    alias: ["/detail/:id"],
     props: (route: RouteLocationNormalized): DetailProps => ({
       musicId: route.params.id as string,
     }),

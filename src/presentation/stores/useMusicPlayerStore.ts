@@ -492,5 +492,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", () => {
     remainDurationLabel,
     selectTrackById,
     getTrackById,
+    disposeEngine,
   };
 });

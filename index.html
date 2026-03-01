@@ -30,6 +30,33 @@
     <meta name="msapplication-TileColor" content="#2196F3" />
 
     <title>MetalMental Music</title>
+
+    <!-- https://developers.google.com/search/docs/appearance/structured-data/organization?hl=ja -->
+    <script type="application/ld+json">
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "url": "https://www.metalmental.net/",
+          "sameAs": [
+            "https://zenn.dev/metalmental",
+            "https://github.com/Flupinochan/",
+            "https://www.youtube.com/@Flupinochan"
+          ],
+          "logo": "https://www.metalmental.net/image-512x512.png",
+          "name": "MetalMental",
+          "description": "MetalMental is a Full-Stack and SRE Engineer.",
+          "email": "flupino@metalmental.net"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "MetalMental Music",
+          "description": "A music platform curated by MetalMental.",
+          "url": "https://music.metalmental.net/"
+        }
+      ]
+    </script>
   </head>
   <body>
     <div id="app"></div>

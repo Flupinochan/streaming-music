@@ -14,12 +14,19 @@
 <script setup lang="ts">
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import MusicPlayerFooter from "@/presentation/view/components/MusicPlayerFooter.vue";
-import { onMounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
+import { useMusicPlayerStore } from "./presentation/stores/useMusicPlayerStore";
 
 const musicStore = useMusicStore();
+const musicPlayerStore = useMusicPlayerStore();
 
 onMounted(() => {
   musicStore.startMusicListSubscription();
+});
+
+onUnmounted(() => {
+  musicStore.stopMusicListSubscription();
+  musicPlayerStore.disposeEngine();
 });
 </script>
 
