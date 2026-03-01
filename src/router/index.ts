@@ -1,4 +1,3 @@
-import { getCurrentUser } from "aws-amplify/auth";
 import type { Component } from "vue";
 import {
   createRouter,
@@ -52,16 +51,5 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to) => {
-  if (!to.meta?.requiresAuth) return true;
-
-  try {
-    await getCurrentUser();
-    return true;
-  } catch {
-    return {
-      name: "auth",
-      query: { redirect: to.fullPath },
-    };
-  }
-});
+// beforeEachは極力使用しない (全ページで必要な処理がある場合のみ)
+// 認証が必要なページだけで設定すべき

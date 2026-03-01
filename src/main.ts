@@ -34,7 +34,6 @@ import { SubMusicMetadataUsecase } from "./use_cases/subMusicMetadataUsecase";
 
 Amplify.configure(outputs);
 const client = generateClient<MusicMetadataSchema>();
-
 export type AmplifyMusicMetadataItem =
   Awaited<
     ReturnType<(typeof client)["models"]["MusicMetadata"]["list"]>

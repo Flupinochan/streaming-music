@@ -42,6 +42,7 @@
 <script setup lang="ts">
 import { useMusicStore } from "@/presentation/stores/useMusicStore";
 import MusicListPlayer from "@/presentation/view/components/MusicListPlayer.vue";
+import { getCurrentUser } from "aws-amplify/auth";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicPlayerStore } from "../stores/useMusicPlayerStore";
@@ -167,8 +168,14 @@ const handleKeydown = (e: KeyboardEvent): void => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener("keydown", handleKeydown);
+
+  try {
+    await getCurrentUser();
+  } catch {
+    router.push({ name: "auth", query: { redirect: "/admin" } });
+  }
 });
 
 onBeforeUnmount(() => {
