@@ -6,6 +6,7 @@
       mandatory
       select-strategy="single-independent"
       v-model:selected="selectedIds"
+      class="pa-0"
       :disabled="musicStore.loading"
       aria-label="再生リスト"
     >
@@ -13,6 +14,7 @@
         v-for="music in musicPlayerStore.tracks"
         :key="music.id"
         :value="music.id"
+        class="pa-4"
         color="primary"
         tabindex="0"
         :aria-label="`${formatTitle(music)}`"
@@ -78,8 +80,14 @@ const formatTitle = (music: SubMusicMetadataViewDto): string => {
     "MB"
   );
 };
-
-// subscription is started once in App.vue, components no longer need to manage it
 </script>
 
-<style scoped></style>
+<style scoped>
+.v-list-item {
+  border-top: 1px inset rgba(255, 255, 255, 0.15);
+}
+
+.v-list-item:first-child {
+  border-top: none;
+}
+</style>
