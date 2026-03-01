@@ -29,7 +29,7 @@
       </v-row>
     </v-container>
 
-    <v-container class="d-flex align-center mb-4" fluid>
+    <v-container class="d-flex align-center mb-2" fluid>
       <v-row align="center" class="no-gutters" style="width: 100%">
         <!-- artwork on left edge -->
         <v-col cols="auto">
@@ -37,8 +37,8 @@
             v-if="musicPlayerStore.playerState.artworkThumbnailUrl"
             :src="musicPlayerStore.playerState.artworkThumbnailUrl"
             :alt="musicPlayerStore.playerState.title || ''"
-            width="48"
-            height="48"
+            width="64"
+            height="64"
             aspect-ratio="1"
             cover
             rounded="sm"
@@ -51,7 +51,7 @@
             @keydown.space="handleFooterImageClick()"
           >
             <template #placeholder>
-              <v-skeleton-loader type="image" width="48" height="48" />
+              <v-skeleton-loader type="image" width="64" height="64" />
             </template>
           </v-img>
         </v-col>
