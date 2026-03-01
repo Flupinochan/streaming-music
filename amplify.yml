@@ -32,3 +32,13 @@ frontend:
         - key: Cache-Control
           # no-cacheと同等だがキャッシュしないという誤解を招くためた利用しない
           value: public, max-age=0, must-revalidate
+    # Brotli圧縮ファイル
+    - pattern: "**/*.br"
+      headers:
+        - key: Content-Encoding
+          value: br
+    # gzip圧縮ファイル
+    - pattern: "**/*.gz"
+      headers:
+        - key: Content-Encoding
+          value: gzip
