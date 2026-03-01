@@ -1,29 +1,28 @@
 <template>
-  <v-footer class="flex-column" app>
+  <v-footer class="flex-column" app aria-label="ミュージックプレイヤー">
     <!-- 再生位置 -->
     <v-container fluid>
       <v-row align="center" class="ga-2">
         <v-col cols="auto">
-          <p class="text-caption">
+          <p class="text-caption" aria-hidden="true">
             {{ musicPlayerStore.currentPositionLabel() }}
           </p>
         </v-col>
         <v-col>
           <v-slider
-            aria-label="再生位置シークバーを操作する"
+            aria-label="再生位置シークバー"
+            :aria-valuetext="musicPlayerStore.currentPositionLabel()"
             track-color="on-surface"
             v-model="sliderSeconds"
             :min="0"
-            :max="
-              Math.max(0, musicPlayerStore.playerState.musicDurationSeconds)
-            "
+            :max="Math.floor(musicPlayerStore.playerState.musicDurationSeconds)"
             :step="1"
             :disabled="!musicPlayerStore.canPlaying()"
             hide-details
           />
         </v-col>
         <v-col cols="auto">
-          <p class="text-caption">
+          <p class="text-caption" aria-hidden="true">
             {{ musicPlayerStore.remainDurationLabel() }}
           </p>
         </v-col>
@@ -44,9 +43,12 @@
             cover
             rounded="sm"
             class="me-2 clickable"
-            :aria-label="`アートワーク${musicPlayerStore.playerState.title}を表示する`"
+            aria-label="アートワークを表示"
             role="button"
+            tabindex="0"
             @click="handleFooterImageClick()"
+            @keydown.enter="handleFooterImageClick()"
+            @keydown.space="handleFooterImageClick()"
           >
             <template #placeholder>
               <v-skeleton-loader type="image" width="48" height="48" />
@@ -58,33 +60,25 @@
           <v-row justify="center" class="play-button-padding">
             <!-- リピート -->
             <v-col cols="auto">
-              <!-- none -->
               <v-btn
-                v-if="musicPlayerStore.playerState.repeatMode === 'none'"
-                aria-label="全曲リピートモードを有効にする"
                 :size="btnSize"
-                icon="$mdiRepeat"
-                color="on-surface"
-                variant="text"
-                @click="musicPlayerStore.toggleRepeatMode()"
-              />
-              <!-- all -->
-              <v-btn
-                v-else-if="musicPlayerStore.playerState.repeatMode === 'all'"
-                aria-label="1曲リピートモードを有効にする"
-                :size="btnSize"
-                icon="$mdiRepeat"
-                color="primary"
-                variant="text"
-                @click="musicPlayerStore.toggleRepeatMode()"
-              />
-              <!-- one -->
-              <v-btn
-                v-else
-                aria-label="リピートモードを無効にする"
-                :size="btnSize"
-                icon="$mdiRepeatOnce"
-                color="primary"
+                :icon="
+                  musicPlayerStore.playerState.repeatMode === 'one'
+                    ? '$mdiRepeatOnce'
+                    : '$mdiRepeat'
+                "
+                :aria-label="
+                  musicPlayerStore.playerState.repeatMode === 'none'
+                    ? '全曲繰り返し'
+                    : musicPlayerStore.playerState.repeatMode === 'all'
+                      ? '1曲繰り返し'
+                      : 'リピートを無効'
+                "
+                :color="
+                  musicPlayerStore.playerState.repeatMode === 'none'
+                    ? 'on-surface'
+                    : 'primary'
+                "
                 variant="text"
                 @click="musicPlayerStore.toggleRepeatMode()"
               />
@@ -96,7 +90,7 @@
                 :size="btnSize"
                 color="on-surface"
                 icon="$mdiSkipPrevious"
-                aria-label="前の曲へ戻る"
+                aria-label="前の曲へ"
                 variant="text"
                 :disabled="!musicPlayerStore.canPrevious()"
                 @click="musicPlayerStore.previous()"
@@ -105,28 +99,22 @@
 
             <!-- 再生/一時停止 -->
             <v-col cols="auto">
-              <!-- 一時停止 -->
               <v-btn
-                v-if="musicPlayerStore.isPlaying()"
                 :size="btnSize"
-                icon="$mdiPause"
-                aria-label="一時停止する"
+                :icon="musicPlayerStore.isPlaying() ? '$mdiPause' : '$mdiPlay'"
+                :aria-label="musicPlayerStore.isPlaying() ? '一時停止' : '再生'"
+                :color="musicPlayerStore.isPlaying() ? 'primary' : 'on-surface'"
+                :disabled="
+                  !musicPlayerStore.isPlaying() &&
+                  !musicPlayerStore.canPlaying()
+                "
                 variant="tonal"
-                @click="musicPlayerStore.pause()"
-              >
-              </v-btn>
-              <!-- 再生 -->
-              <v-btn
-                v-else
-                aria-label="再生する"
-                :size="btnSize"
-                color="on-surface"
-                icon="$mdiPlay"
-                variant="tonal"
-                :disabled="!musicPlayerStore.canPlaying()"
-                @click="musicPlayerStore.play()"
-              >
-              </v-btn>
+                @click="
+                  musicPlayerStore.isPlaying()
+                    ? musicPlayerStore.pause()
+                    : musicPlayerStore.play()
+                "
+              />
             </v-col>
 
             <!-- 次へ -->
@@ -135,7 +123,7 @@
                 :size="btnSize"
                 color="on-surface"
                 icon="$mdiSkipNext"
-                aria-label="次の曲へスキップする"
+                aria-label="次の曲へ"
                 variant="text"
                 :disabled="!musicPlayerStore.canNext()"
                 @click="musicPlayerStore.next()"
@@ -145,7 +133,11 @@
             <!-- シャッフル -->
             <v-col cols="auto">
               <v-btn
-                aria-label="シャッフルモードを切り替える"
+                :aria-label="
+                  musicPlayerStore.playerState.shuffleEnabled
+                    ? 'シャッフルを無効'
+                    : 'シャッフルを有効'
+                "
                 :size="btnSize"
                 icon="$mdiShuffleVariant"
                 :color="

@@ -14,19 +14,24 @@
     <div class="glass-overlay"></div>
     <v-img
       :src="musicPlayerStore.playerState.artworkUrl"
-      :alt="musicPlayerStore.playerState.title"
       style="view-transition-name: artwork"
       class="clickable"
       contain
+      :alt="`${musicPlayerStore.playerState.title} のアートワーク`"
+      aria-label="再生リストに戻る"
+      role="button"
+      tabindex="0"
       @click="handleImageClick()"
+      @keydown.enter="handleImageClick()"
+      @keydown.space="handleImageClick()"
     />
 
-    <div
+    <p
       v-if="musicPlayerStore.playerState.title"
       class="title-overlay primary--text"
     >
       {{ musicPlayerStore.playerState.title }}
-    </div>
+    </p>
   </v-container>
 </template>
 

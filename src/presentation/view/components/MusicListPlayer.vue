@@ -2,20 +2,24 @@
   <div style="overflow-y: auto">
     <v-list
       v-if="musicPlayerStore.tracks.length > 0"
+      role="listbox"
+      mandatory
       select-strategy="single-independent"
       v-model:selected="selectedIds"
       :disabled="musicStore.loading"
+      aria-label="再生リスト"
     >
       <v-list-item
         v-for="music in musicPlayerStore.tracks"
         :key="music.id"
         :value="music.id"
         color="primary"
+        tabindex="0"
+        :aria-label="`${formatTitle(music)}`"
       >
         <template #prepend>
           <v-img
             :src="music.artworkThumbnailUrl"
-            :alt="music.title"
             style="view-transition-name: artwork"
             class="me-2"
             width="48"
@@ -23,15 +27,16 @@
             aspect-ratio="1"
             cover
             rounded="sm"
+            alt=""
+            role="img"
+            aria-hidden="true"
           >
             <template #placeholder>
               <v-skeleton-loader type="image" width="48" height="48" />
             </template>
           </v-img>
         </template>
-        <v-list-item-title
-          :aria-label="`曲名は${music.title}、再生時間は${Math.floor(music.musicDurationSeconds / 60)}分`"
-        >
+        <v-list-item-title>
           {{ formatTitle(music) }}
         </v-list-item-title>
       </v-list-item>
@@ -66,7 +71,7 @@ const selectedIds = computed<string[]>({
 const formatTitle = (music: SubMusicMetadataViewDto): string => {
   return (
     music.title +
-    " - " +
+    " " +
     Math.floor(music.musicDurationSeconds / 60) +
     "分 " +
     (music.musicDataBytes / 1024 / 1024).toFixed(1) +
